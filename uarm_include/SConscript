@@ -1,0 +1,6 @@
+import os
+
+Import('env')
+s_files = ['crtso.s', 'libuarm.s', 'libdiv.s']
+asm_o = env.Object(s_files)
+Return('asm_o')
