@@ -210,8 +210,7 @@ void test() {
 
     SYSCALL(VERHOGEN, (int)&testsem, 0, 0); /* V(testsem)   */
 	
-	if (testsem == 0 ) print("è zero"); 
-	if (testsem > 2) print("è altro"); 	
+	if (testsem == 0 ) print("è zero"); 	
 
     if (testsem != 1) {
         print("error: p1 v(testsem) with no effects\n");

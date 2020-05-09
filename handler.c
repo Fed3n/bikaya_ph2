@@ -44,7 +44,7 @@ void syscall_handler(){
 */
 		switch (sysNum){
 			case CREATE_PROC:
-				createProcess((state_t*)arg1,arg2,arg3);
+				createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
 			case TERMINATE_PROC:
 				terminateProcess((int*)arg1);
 			break;

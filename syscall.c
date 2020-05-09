@@ -1,6 +1,6 @@
 #include "syscall.h"
 #include "scheduler.h"
-
+#include "auxfun.h"
 
 //definizione per i test
 
@@ -38,15 +38,14 @@ extern pcb_t* currentProc;
 #define p_s.pc p_s.pc_epc
 #endif
 
-//cosa poco elegante; da modificare initProcess_KM
-
 //crea un nuovo processo
 void/*int*/ createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
 	/*if (proc == NULL)
 		return -1;*/
-	ownmemcpy(&proc->p_s, statep, sizeof(state_t));
-	initProcess_KM(proc, proc->p_s.pc, priority);
+	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
+	proc->original_priority = priority;
+	proc->priority = priority;
 	insertChild(currentProc,proc);
 	insertReadyQueue(proc);
 	if (cpid != NULL)
@@ -86,9 +85,9 @@ void verhogen(int *semaddr){
 			insertReadyQueue(p);
 	} else {
 		
-		//termprint("semaforo  vuoto");
+		termprint("semaforo  vuoto");
 
-		*(semaddr)++;
+		(*semaddr)++;
 	}
 	schedule();
 }	

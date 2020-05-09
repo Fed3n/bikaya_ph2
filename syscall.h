@@ -1,6 +1,7 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
 #include "pcb.h"
+#include "asl.h"
 #include "const.h"
 
 void createProcess(state_t* statep, int priority, void **cpid);
