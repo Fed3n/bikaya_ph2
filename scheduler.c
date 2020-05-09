@@ -14,7 +14,6 @@ state_t waitingState;
 
 /*la WAIT() è molto meno cpu consuming di un busy waiting*/
 static void wait4proc(){
-	HALT();
 	WAIT();
 }
 

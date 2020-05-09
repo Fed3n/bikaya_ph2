@@ -73,6 +73,7 @@ void tlb_handler(){
 }
 
 void trap_handler(){
+	termprint("Trap handler called\n");
 	state_t* p = (state_t *)PGMTRAP_OLDAREA;
 	special_handler(2,p,0,0,0);
 }

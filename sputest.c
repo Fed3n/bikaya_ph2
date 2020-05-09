@@ -37,35 +37,45 @@ void termprint(char *str) {
 #define termprint(str) tprint(str);
 #endif
 
-state_t spunew, spuold;
+memaddr* memLocation = (memaddr *)0x34;
+
+state_t sys9new, sys9old, trapnew, trapold;
 
 void systest(){
-    termprint("Nice!");
-    SYSCALL(3,0,0,0);
+    termprint("systest! Nice!\n");
+    schedule();
 }
 
 void traptest(){
-
-}
-
-void loopingproc(){
-    for(;;)
-        termprint("looping!\n");
-        WAIT();
+    termprint("traptest success! Nice!\n");
+    SYSCALL(3,0,0,0);
 }
 
 void spufailtest(){
     termprint("Hi I'm spufailtest!\n");
     SYSCALL(9,0,0,0);
     termprint("This shouldn't be printed\n");
+    HALT();
+}
+
+void spufailtest2(){
+    termprint("Trying to call sys7 one time too many...\n");
+    SYSCALL(7,0,&sys9old,&sys9new);
+    termprint("This definitely shouldn't be printed.\n");
 }
 
 void sputest(){
     termprint("Hi I'm sputest!\n");
-    initExcarea(&spunew, systest);
-    SYSCALL(7,0,&spuold,&spunew);
+    initExcarea(&sys9new, systest);
+    initExcarea(&trapnew, traptest);
+    SYSCALL(7,0,&sys9old,&sys9new);
     termprint("Sys7 done!");
     SYSCALL(9,0,0,0);
+    SYSCALL(7,2,&trapold,&trapnew);
+    termprint("Now trying to cause a Trap...\n");
+    *memLocation = *memLocation + 1;
+    termprint("This shouldn't be printed either.\n");
+    HALT();
 }
 
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
@@ -85,13 +95,15 @@ int main(){
     pcb_t* b = allocPcb();
     pcb_t* c = allocPcb();
 
-    initProcess_KM(a,loopingproc,1);
+    initProcess_KM(a,spufailtest2,1);
     initProcess_KM(b,sputest,2);
     initProcess_KM(c,spufailtest,3);
     initReadyQueue();
     insertReadyQueue(a);
     insertReadyQueue(b);
     insertReadyQueue(c);
+
+    //setTIMER(ACK_SLICE);
 
     termprint("Calling schedule...\n");
     schedule();
