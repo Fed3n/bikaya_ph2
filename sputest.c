@@ -1,5 +1,6 @@
 #include "const.h"
 #include "pcb.h"
+#include "asl.h"
 #include "auxfun.h"
 #include "scheduler.h"
 #include "handler.h"
@@ -36,6 +37,37 @@ void termprint(char *str) {
 #define termprint(str) tprint(str);
 #endif
 
+state_t spunew, spuold;
+
+void systest(){
+    termprint("Nice!");
+    SYSCALL(3,0,0,0);
+}
+
+void traptest(){
+
+}
+
+void loopingproc(){
+    for(;;)
+        termprint("looping!\n");
+        WAIT();
+}
+
+void spufailtest(){
+    termprint("Hi I'm spufailtest!\n");
+    SYSCALL(9,0,0,0);
+    termprint("This shouldn't be printed\n");
+}
+
+void sputest(){
+    termprint("Hi I'm sputest!\n");
+    initExcarea(&spunew, systest);
+    SYSCALL(7,0,&spuold,&spunew);
+    termprint("Sys7 done!");
+    SYSCALL(9,0,0,0);
+}
+
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
 int main(){
 	initAreas();
@@ -45,7 +77,22 @@ int main(){
 	termprint("PCB DONE!\n");
 
 	initASL();
-	termprint("ASL DONE!\n")
+	termprint("ASL DONE!\n");
 
-	HALT();
+    initSysData();
+
+    pcb_t* a = allocPcb();
+    pcb_t* b = allocPcb();
+    pcb_t* c = allocPcb();
+
+    initProcess_KM(a,loopingproc,1);
+    initProcess_KM(b,sputest,2);
+    initProcess_KM(c,spufailtest,3);
+    initReadyQueue();
+    insertReadyQueue(a);
+    insertReadyQueue(b);
+    insertReadyQueue(c);
+
+    termprint("Calling schedule...\n");
+    schedule();
 }

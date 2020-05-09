@@ -13,4 +13,6 @@ void tlb_handler();
 
 void trap_handler();
 
+void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3);
+
 #endif
