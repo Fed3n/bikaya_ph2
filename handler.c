@@ -10,12 +10,22 @@ extern void termprint(char *str);
 #define termprint(str) tprint(str);
 #endif
 
+/*system call numbers*/
+#define GET_CPU_TIME 1
+#define CREATE_PROC 2
+#define TERMINATE_PROC 3
+#define VERHOGEN 4
+#define PASSEREN 5
+#define IO_COMMAND 6
+#define SPEC_PASSUP 7
+#define GET_PID 8
+
 extern pcb_t* currentProc;
 
 void syscall_handler(){
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
-	p->ST_PC = p->ST_PC + INT_PC*WORDSIZE;
+	p->ST_PC = p->ST_PC + SYSBP_PC*WORDSIZE;
 	ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
 	/*controllo se l'eccezione sollevata è una system call*/
 	if (CAUSE_REG(p) == SYSCALL_EXC) {
@@ -24,10 +34,25 @@ void syscall_handler(){
 		unsigned int arg1 = p->ST_A1;
 		unsigned int arg2 = p->ST_A2;
 		unsigned int arg3 = p->ST_A3;
+		
+/*		int arg1 = 0;
 
+		int* prov = (int*)p->ST_A1;
+		if ((*prov) == 0) termprint("ella");
+		if ((*prov) >= 2) termprint("elli");
+		if ((*prov) <= 200000000) termprint("elle");
+*/
 		switch (sysNum){
-			case 3:
-				sys3();
+			case CREATE_PROC:
+				createProcess((state_t*)arg1,arg2,arg3);
+			case TERMINATE_PROC:
+				terminateProcess((int*)arg1);
+			break;
+			case VERHOGEN:
+				verhogen((int*)arg1);			
+			break;
+			case PASSEREN:
+				passeren((int*)arg1);
 			break;
 			default:
 				termprint("Syscall not yet managed.\n");

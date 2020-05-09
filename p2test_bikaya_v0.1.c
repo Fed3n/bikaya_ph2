@@ -21,9 +21,9 @@
  */
 
 #ifdef TARGET_UMPS
-#include "umps/libumps.h"
-#include "umps/arch.h"
-#include "umps/types.h"
+#include "umps_include/libumps.h"
+#include "umps_include/arch.h"
+#include "umps_include/types.h"
 #define FRAME_SIZE 4096
 /* Elapsed clock ticks (CPU instructions executed) since system power on.
    Only the "low" part is actually used. */
@@ -46,9 +46,9 @@
 #endif
 
 #ifdef TARGET_UARM
-#include "uarm/libuarm.h"
-#include "uarm/arch.h"
-#include "uarm/uARMtypes.h"
+#include "uarm_include/libuarm.h"
+#include "uarm_include/arch.h"
+#include "uarm_include/uARMtypes.h"
 
 #define VMON  0x00000001
 #define VMOFF (~VMON)
@@ -151,25 +151,71 @@ unsigned int set_sp_pc_status(state_t *s, state_t *copy, unsigned int pc) {
 }
 
 
+
+#define print(msg) termprint(msg)
+
+
+//STAMPA
+
+#ifdef TARGET_UMPS
+static termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 0);
+
+static unsigned int tx_status(termreg_t *tp) {
+    return ((tp->transm_status) & TERM_STATUS_MASK);
+}
+
+void termprint(char *str) {
+    while (*str) {
+        unsigned int stat = tx_status(term0_reg);
+        if (stat != ST_READY && stat != ST_TRANSMITTED)
+            return;
+
+        term0_reg->transm_command = (((*str) << CHAR_OFFSET) | CMD_TRANSMIT);
+
+        while ((stat = tx_status(term0_reg)) == ST_BUSY)
+            ;
+
+        term0_reg->transm_command = CMD_ACK;
+
+        if (stat != ST_TRANSMITTED)
+            return;
+        else
+            str++;
+    }
+}
+#endif
+#ifdef TARGET_UARM
+#define termprint(str) tprint(str);
+#endif
+
+
+//
+
+
+
+
 /* a procedure to print on terminal 0 */
+/*
 void print(char *msg) {
     unsigned int command;
     char *       s    = msg;
     devregtr *   base = (devregtr *)DEV_REG_ADDR(IL_TERMINAL, 0);     // (devregtr *)(TERM0ADDR);
     devregtr     status;
 
-    SYSCALL(PASSEREN, (int)&term_mut, 0, 0); /* get term_mut lock */
+    SYSCALL(PASSEREN, (int)&term_mut, 0, 0); 
 
-    while (*s != '\0') {
+*//* get term_mut lock */
+
+  //  while (*s != '\0') {
         /* Put "transmit char" command+char in term0 register (3rd word). This
                  actually starts the operation on the device! */
-        command = PRINTCHR | (((devregtr)*s) << BYTELEN);
+  //      command = PRINTCHR | (((devregtr)*s) << BYTELEN);
 
         /* Wait for I/O completion (SYS8) */
-        status = SYSCALL(WAITIO, command, (int)base, FALSE);
+   //     status = SYSCALL(WAITIO, command, (int)base, FALSE);
 
         /*		PANIC(); */
-
+/*
         if ((status & TERMSTATMASK) != TRANSM)
             PANIC();
 
@@ -179,14 +225,23 @@ void print(char *msg) {
         s++;
     }
 
-    SYSCALL(VERHOGEN, (int)&term_mut, 0, 0); /* release term_mut */
-}
+    SYSCALL(VERHOGEN, (int)&term_mut, 0, 0); 
+
+*//* release term_mut */
+//}
 
 
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {
+
+
+
+	if (startp2 == 0) print("a ");
+	if (endp2 == 0) print("b ");
+	print("\n");
+
 
     SYSCALL(VERHOGEN, (int)&testsem, 0, 0); /* V(testsem)   */
 

@@ -1,5 +1,6 @@
 #include "const.h"
 #include "pcb.h"
+#include "asl.h"
 #include "auxfun.h"
 #include "scheduler.h"
 #include "handler.h"
@@ -36,6 +37,8 @@ void termprint(char *str) {
 #define termprint(str) tprint(str);
 #endif
 
+extern void test();
+
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
 int main(){
 	initAreas();
@@ -47,5 +50,19 @@ int main(){
 	initASL();
 	termprint("ASL DONE!\n")
 
+	pcb_t* proc_test = allocPcb();
+	initProcess_KM(proc_test, test, 1);
+
+	termprint("PROCESS INITIALIZED!\n");
+
+	initReadyQueue();
+	insertReadyQueue(proc_test);
+
+	termprint("PROCESS QUEUED!\n");
+
+	setTIMER(ACK_SLICE);
+	termprint("Now calling scheduler...\n");
+	schedule();
+	
 	HALT();
 }

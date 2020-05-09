@@ -39,7 +39,7 @@
 #endif
 
 #ifdef TARGET_UARM
-#include "uarm/uARMconst.h"
+#include "uARMconst.h"
 #endif
 
 
