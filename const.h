@@ -13,6 +13,7 @@
 #include "arch.h"
 #endif
 
+#include "const_bikaya.h"
 #include "types_bikaya.h"
 
 /**************************************************************************** 

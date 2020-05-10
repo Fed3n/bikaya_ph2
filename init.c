@@ -1,4 +1,5 @@
 #include "init.h"
+#include "syscall.h"
 #include "handler.h"
 #include "auxfun.h"
 

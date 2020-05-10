@@ -33,44 +33,24 @@ void user_timer_update(pcb_t *currentProc) {
 //definizione per i test
 
 #ifdef TARGET_UMPS
-void termprint(char *str) {
-    while (*str) {
-        unsigned int stat = tx_status(term0_reg);
-        if (stat != ST_READY && stat != ST_TRANSMITTED)
-            return;
-
-        term0_reg->transm_command = (((*str) << CHAR_OFFSET) | CMD_TRANSMIT);
-
-        while ((stat = tx_status(term0_reg)) == ST_BUSY)
-            ;
-
-        term0_reg->transm_command = CMD_ACK;
-
-        if (stat != ST_TRANSMITTED)
-            return;
-        else
-            str++;
-    }
-}
+extern void termprint(char *str);
 #endif
+
 #ifdef TARGET_UARM
 #define termprint(str) tprint(str);
 #endif
-
-//
-
-
-extern pcb_t* currentProc;
 
 #ifdef TARGET_UMPS
 #define p_s.pc p_s.pc_epc
 #endif
 
+extern pcb_t* currentProc;
+excarea_t excareas[3];
+
 //Ritorno i tempi passati in kernel, user mode e tempo totale (wallclock)
 void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallclock) {
 	//Entro in user mode ed aggiorno il tempo passato in kernel mode
 	user_timer_update(currentProc);
-
 	if(user != NULL) *user = currentProc->total_user_timer;
 	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
 	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
@@ -143,4 +123,27 @@ void passeren(int *semaddr){
 	schedule();
 }
 
+int sys7(int type, state_t* old, state_t* new){
+	termprint("sys7 called\n");
+	/*magari controllo che 0 <= type <= 2*/
+	excarea_t* p = &(excareas[type]);
+	/*se used è marcato termino chiamante*/
+	if(p->used == 1)
+		terminateProcess(NULL);
+	/*altrimenti inizializzo le aree del type corrispondente e marco used*/
+	else{
+		p->used = 1;
+		p->newarea = new;
+		p->oldarea = old;
+	}
+	termprint("Calling schedule after sys7...\n");
+	schedule();
+}
+
+void initSysData(){
+	int i;
+	for(i = 0; i < 3; i++){
+		ownmemset(&excareas[i], 0, sizeof(excarea_t));
+	}
+}
 

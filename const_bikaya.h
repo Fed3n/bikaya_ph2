@@ -1,6 +1,14 @@
 #ifndef CONST_BIKAYA_INCLUDED
 #define CONST_BIKAYA_INCLUDED
 
+#define ST_READY         1
+#define ST_BUSY          3
+#define ST_TRANSMITTED   5
+#define CMD_ACK          1
+#define CMD_TRANSMIT     2
+#define CHAR_OFFSET      8
+#define TERM_STATUS_MASK 0xFF
+
 #ifdef TARGET_UMPS
 
 

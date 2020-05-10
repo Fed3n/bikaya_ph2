@@ -21,6 +21,7 @@ extern void termprint(char *str);
 #define GET_PID 8
 
 extern pcb_t* currentProc;
+extern excarea_t excareas[3];
 
 void syscall_handler(){
 	kernel_timer_update(currentProc);
@@ -35,14 +36,7 @@ void syscall_handler(){
 		unsigned int arg1 = p->ST_A1;
 		unsigned int arg2 = p->ST_A2;
 		unsigned int arg3 = p->ST_A3;
-		
-/*		int arg1 = 0;
 
-		int* prov = (int*)p->ST_A1;
-		if ((*prov) == 0) termprint("ella");
-		if ((*prov) >= 2) termprint("elli");
-		if ((*prov) <= 200000000) termprint("elle");
-*/
 		switch (sysNum){
 			case GET_CPU_TIME:
 				get_cpu_time((unsigned int*)arg1, (unsigned int*)arg2, (unsigned int*)arg3);
@@ -58,9 +52,11 @@ void syscall_handler(){
 			case PASSEREN:
 				passeren((int*)arg1);
 			break;
+			case SPEC_PASSUP:
+				sys7((int)arg1,(state_t*)arg2,(state_t*)arg3);
+				break;
 			default:
-				termprint("Syscall not yet managed.\n");
-				HALT();
+				special_handler(0,p,arg1,arg2,arg3);
 		}
 	}
 	else{
@@ -95,11 +91,29 @@ void interrupt_handler(){
 }
 
 void tlb_handler(){
-	termprint("TLB!");
-	HALT();
+	state_t* p = (state_t *)TLB_OLDAREA;
+	special_handler(1,p,0,0,0);
 }
 
 void trap_handler(){
-	termprint("TRAP!");
-	HALT();
+	termprint("Trap handler called\n");
+	state_t* p = (state_t *)PGMTRAP_OLDAREA;
+	special_handler(2,p,0,0,0);
+}
+
+void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3){
+	termprint("Entering special handler...\n");
+	if (excareas[type].used == 1){
+		/*passo i parametri in caso sia una syscall*/
+		if(type == 0){
+			/*idk actually?*/
+		}
+		ownmemcpy(oldarea, excareas[type].oldarea, sizeof(state_t));
+		state_t* p = (excareas[type].newarea);
+		LDST(TO_LOAD(p));
+	}
+	else{
+		termprint("Tipo speciale non definito.\n");
+		SYSCALL(3,0,0,0);
+	}
 }

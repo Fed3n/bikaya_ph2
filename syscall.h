@@ -4,9 +4,14 @@
 #include "asl.h"
 #include "const.h"
 
-void kernel_timer_update(pcb_t *currentProc);
+typedef struct excarea_t{
+	/*aree di memoria per newarea oldarea*/
+	state_t* newarea;
+	state_t* oldarea;
+	int used;	/*1 quando l'area è inizializzata*/
+} excarea_t;
 
-void user_timer_update(pcb_t *currentProc);
+void kernel_timer_update(pcb_t *currentProc);
 
 void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallclock);
 
@@ -20,4 +25,7 @@ void verhogen(int *semaddr);
 
 void passeren(int *semaddr);
 
+int sys7(int type, state_t* old, state_t* new);
+
+void initSysData();
 #endif
