@@ -12,7 +12,23 @@ extern void termprint(char *str);
 
 extern pcb_t* currentProc;
 
+void user_time_update() {
+	if(currentProc != NULL) {
+		currentProc->start_user_time = currentProc->start_user_time + getTODLO() - currentProc->total_user_time;
+		currentProc->start_user_time = 0;
+	}	
+}
+void kernel_time_update() {
+	if(currentProc != NULL) {
+		currentProc->start_kernel_time = currentProc->start_kernel_time + getTODLO() - currentProc->total_kernel_time;
+		currentProc->start_kernel_time = 0;
+	}
+}
+
 void syscall_handler(){
+	user_time_update();
+	kernel_time_update();
+	currentProc->start_kernel_time = getTODLO();
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
 	p->ST_PC = p->ST_PC + INT_PC*WORDSIZE;
@@ -26,6 +42,9 @@ void syscall_handler(){
 		unsigned int arg3 = p->ST_A3;
 
 		switch (sysNum){
+			case 1: 
+				get_CPU_time((unsigned int*)arg1,(unsigned int*)arg2,(unsigned int*)arg3);
+				break;
 			case 3:
 				sys3();
 			break;
@@ -38,9 +57,11 @@ void syscall_handler(){
 		termprint("BREAKPOINT!\n");
 		HALT();
 	}
+	currentProc->start_user_time = getTODLO();
 }
 
 void interrupt_handler(){
+	user_time_update();
 	/*Se c'è un processo in corso che è stato interrotto*/
 	if(currentProc != NULL){
 		/*PC da decrementare di 1 word su uarm, niente su umps*/
@@ -62,6 +83,9 @@ void interrupt_handler(){
 			termprint("Interrupt line not yet managed.\n");
 			HALT();
 	}
+	/*Usciti da un interrupt si torna in user mode*/
+	if(currentProc != NULL) currentProc->start_user_time = getTODLO();	
+	schedule();
 }
 
 void tlb_handler(){

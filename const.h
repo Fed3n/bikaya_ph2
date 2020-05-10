@@ -38,6 +38,9 @@
 
 #define CR 0x0a   /* carriage return as returned by the terminal */
 
+/*Elapsed clock times since system power on (Time of Day)*/
+#define getTODLOW() (*((unsigned int*)BUS_REG_TOD_LO))
+
 #define RAMBASE    *((unsigned int *)BUS_REG_RAM_BASE)
 #define RAMSIZE    *((unsigned int *)BUS_REG_RAM_SIZE)
 #define RAMTOP     (RAMBASE + RAMSIZE)

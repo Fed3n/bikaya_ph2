@@ -108,6 +108,13 @@ void schedule(){
 	
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();
+
+	/*Per wallclock pari a 0 (prima attivazione di un processo) si assegna il Time of Day*/
+	if(currentProc != NULL) currentProc->wallclock_time = getTODLO();
+	
+	/*Il processo comincia in user mode*/
+	currentProc->start_user_time = getTODLO();
+
 	state_t* p = &(currentProc->p_s);
 	LDST(TO_LOAD(p));
 }

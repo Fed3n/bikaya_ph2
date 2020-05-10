@@ -5,6 +5,10 @@
 #include "interrupt.h"
 #include "const.h"
 
+void user_time_update();
+
+void kernel_time_update();
+
 void syscall_handler();
 
 void interrupt_handler();
