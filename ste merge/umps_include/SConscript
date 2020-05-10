@@ -1,6 +1,0 @@
-import os
-
-Import('env')
-s_files = ['crtso.S', 'libumps.S']
-asm_o = env.Object(s_files)
-Return('asm_o')

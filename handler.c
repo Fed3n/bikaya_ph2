@@ -23,6 +23,7 @@ extern void termprint(char *str);
 extern pcb_t* currentProc;
 
 void syscall_handler(){
+	kernel_timer_update(currentProc);
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
 	p->ST_PC = p->ST_PC + SYSBP_PC*WORDSIZE;
@@ -43,6 +44,9 @@ void syscall_handler(){
 		if ((*prov) <= 200000000) termprint("elle");
 */
 		switch (sysNum){
+			case GET_CPU_TIME:
+				get_cpu_time((unsigned int*)arg1, (unsigned int*)arg2, (unsigned int*)arg3);
+				break;
 			case CREATE_PROC:
 				createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
 			case TERMINATE_PROC:
@@ -66,6 +70,7 @@ void syscall_handler(){
 }
 
 void interrupt_handler(){
+	kernel_timer_update(currentProc);
 	/*Se c'è un processo in corso che è stato interrotto*/
 	if(currentProc != NULL){
 		/*PC da decrementare di 1 word su uarm, niente su umps*/

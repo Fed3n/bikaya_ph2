@@ -36,6 +36,10 @@ typedef struct pcb_t {
 
     /* key of the semaphore on which the process is eventually blocked */
     int *p_semkey;
+
+    unsigned int start_user_timer, total_user_timer;
+    unsigned int start_kernel_timer, total_kernel_timer;
+    unsigned int wallclock_timer;
 } pcb_t;
 
 

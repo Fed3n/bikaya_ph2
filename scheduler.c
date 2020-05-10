@@ -106,6 +106,9 @@ void schedule(){
 		LDST(TO_LOAD((&waitingState)));
 	}
 	
+	//Avvio il processo in user mode
+	user_timer_update(currentProc);	
+
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();
 	state_t* p = &(currentProc->p_s);

@@ -2,6 +2,34 @@
 #include "scheduler.h"
 #include "auxfun.h"
 
+//Time management
+
+void kernel_timer_update(pcb_t *currentProc) {
+	if(currentProc != NULL) { 
+		//Calcolo il tempo passato in user prima di passare alla kernel mode
+		if(currentProc->start_user_timer > 0) {
+			currentProc->total_user_timer = currentProc->total_user_timer + (getTODLO() - currentProc->start_user_timer);
+			//Esco dalla user mode	
+			currentProc->start_user_timer = 0;
+		}
+	//Entro in kernel mode
+	currentProc->start_kernel_timer = getTODLO();
+	}
+}
+
+void user_timer_update(pcb_t *currentProc) {
+	if(currentProc != NULL) { 
+		//Calcolo il tempo passato in kernel prima di passare alla user mode 
+		if(currentProc->start_kernel_timer > 0) {
+			currentProc->total_kernel_timer = currentProc->total_kernel_timer + (getTODLO() - currentProc->start_kernel_timer);
+			//Esco dalla kernel mode	
+			currentProc->start_user_timer = 0;
+		}
+	//Entro in user mode
+	currentProc->start_user_timer = getTODLO();
+	}
+}
+
 //definizione per i test
 
 #ifdef TARGET_UMPS
@@ -38,6 +66,16 @@ extern pcb_t* currentProc;
 #define p_s.pc p_s.pc_epc
 #endif
 
+//Ritorno i tempi passati in kernel, user mode e tempo totale (wallclock)
+void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallclock) {
+	//Entro in user mode ed aggiorno il tempo passato in kernel mode
+	user_timer_update(currentProc);
+
+	if(user != NULL) *user = currentProc->total_user_timer;
+	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
+	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
+}
+
 //crea un nuovo processo
 void/*int*/ createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
@@ -46,6 +84,9 @@ void/*int*/ createProcess(state_t* statep, int priority, void** cpid){
 	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
 	proc->original_priority = priority;
 	proc->priority = priority;
+
+	proc->wallclock_timer = getTODLO();
+	
 	insertChild(currentProc,proc);
 	insertReadyQueue(proc);
 	if (cpid != NULL)
