@@ -59,6 +59,8 @@ void spufailtest(){
 }
 
 void spufailtest2(){
+    termprint("Hi I'm spufaultest2!\n");
+    SYSCALL(7,0,&sys9old,&sys9new);
     termprint("Trying to call sys7 one time too many...\n");
     SYSCALL(7,0,&sys9old,&sys9new);
     termprint("This definitely shouldn't be printed.\n");
@@ -88,8 +90,6 @@ int main(){
 
 	initASL();
 	termprint("ASL DONE!\n");
-
-    initSysData();
 
     pcb_t* a = allocPcb();
     pcb_t* b = allocPcb();

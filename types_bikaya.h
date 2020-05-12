@@ -18,6 +18,14 @@
 
 typedef unsigned int memaddr;
 
+/*Struttura per memorizzare le aree degli handler speciali*/
+typedef struct excarea_t{
+    /*aree di memoria per newarea oldarea*/
+    state_t* newarea;
+    state_t* oldarea;
+    int used;   /*1 quando l'area è inizializzata*/
+} excarea_t;
+
 /* Process Control Block (PCB) data structure */
 typedef struct pcb_t {
     /*process queue fields */
@@ -40,6 +48,9 @@ typedef struct pcb_t {
     unsigned int start_user_timer, total_user_timer;
     unsigned int start_kernel_timer, total_kernel_timer;
     unsigned int wallclock_timer;
+
+    /*aree per memorizzare gli handler speciali*/
+    excarea_t excareas[3];
 } pcb_t;
 
 

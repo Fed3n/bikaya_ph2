@@ -48,7 +48,7 @@ int main(){
 	termprint("PCB DONE!\n");
 
 	initASL();
-	termprint("ASL DONE!\n")
+	termprint("ASL DONE!\n");
 
 	pcb_t* proc_test = allocPcb();
 	initProcess_KM(proc_test, test, 1);

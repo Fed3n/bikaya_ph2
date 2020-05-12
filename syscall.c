@@ -2,34 +2,6 @@
 #include "scheduler.h"
 #include "auxfun.h"
 
-//Time management
-
-void kernel_timer_update(pcb_t *currentProc) {
-	if(currentProc != NULL) { 
-		//Calcolo il tempo passato in user prima di passare alla kernel mode
-		if(currentProc->start_user_timer > 0) {
-			currentProc->total_user_timer = currentProc->total_user_timer + (getTODLO() - currentProc->start_user_timer);
-			//Esco dalla user mode	
-			currentProc->start_user_timer = 0;
-		}
-	//Entro in kernel mode
-	currentProc->start_kernel_timer = getTODLO();
-	}
-}
-
-void user_timer_update(pcb_t *currentProc) {
-	if(currentProc != NULL) { 
-		//Calcolo il tempo passato in kernel prima di passare alla user mode 
-		if(currentProc->start_kernel_timer > 0) {
-			currentProc->total_kernel_timer = currentProc->total_kernel_timer + (getTODLO() - currentProc->start_kernel_timer);
-			//Esco dalla kernel mode	
-			currentProc->start_user_timer = 0;
-		}
-	//Entro in user mode
-	currentProc->start_user_timer = getTODLO();
-	}
-}
-
 //definizione per i test
 
 #ifdef TARGET_UMPS
@@ -40,12 +12,12 @@ extern void termprint(char *str);
 #define termprint(str) tprint(str);
 #endif
 
-#ifdef TARGET_UMPS
-#define p_s.pc p_s.pc_epc
-#endif
-
 extern pcb_t* currentProc;
-excarea_t excareas[3];
+
+
+/*************************************/
+/* SYSTEM CALL                       */
+/*************************************/
 
 //Ritorno i tempi passati in kernel, user mode e tempo totale (wallclock)
 void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallclock) {
@@ -87,17 +59,6 @@ void terminateProcess(void* pid){
 	schedule();
 }
 
-//funzione ausiliaria utilizzata per poter realizzare la ricorsione
-void terminateProcess_exec(pcb_t *root){
-	while (!emptyChild(root)){
-		pcb_t *child = removeChild(root);
-		if (child != NULL) 
-			terminateProcess_exec(child);
-	}		
-	outReadyQueue(root);
-	freePcb(root);
-}
-
 //rilascio del semaforo
 void verhogen(int *semaddr){
 	if (headBlocked(semaddr) != NULL){
@@ -123,10 +84,10 @@ void passeren(int *semaddr){
 	schedule();
 }
 
-int sys7(int type, state_t* old, state_t* new){
+int spec_passup(int type, state_t* old, state_t* new){
 	termprint("sys7 called\n");
 	/*magari controllo che 0 <= type <= 2*/
-	excarea_t* p = &(excareas[type]);
+	excarea_t* p = &(currentProc->excareas[type]);
 	/*se used è marcato termino chiamante*/
 	if(p->used == 1)
 		terminateProcess(NULL);
@@ -136,14 +97,50 @@ int sys7(int type, state_t* old, state_t* new){
 		p->newarea = new;
 		p->oldarea = old;
 	}
-	termprint("Calling schedule after sys7...\n");
+	termprint("Calling schedule after spec_passup...\n");
 	schedule();
 }
 
-void initSysData(){
-	int i;
-	for(i = 0; i < 3; i++){
-		ownmemset(&excareas[i], 0, sizeof(excarea_t));
+/*************************************/
+/* FUNZIONI AUSILIARIE               */
+/*************************************/
+
+//Time management
+
+void kernel_timer_update(pcb_t *currentProc) {
+	if(currentProc != NULL) { 
+		//Calcolo il tempo passato in user prima di passare alla kernel mode
+		if(currentProc->start_user_timer > 0) {
+			currentProc->total_user_timer = currentProc->total_user_timer + (getTODLO() - currentProc->start_user_timer);
+			//Esco dalla user mode	
+			currentProc->start_user_timer = 0;
+		}
+	//Entro in kernel mode
+	currentProc->start_kernel_timer = getTODLO();
 	}
 }
 
+void user_timer_update(pcb_t *currentProc) {
+	if(currentProc != NULL) { 
+		//Calcolo il tempo passato in kernel prima di passare alla user mode 
+		if(currentProc->start_kernel_timer > 0) {
+			currentProc->total_kernel_timer = currentProc->total_kernel_timer + (getTODLO() - currentProc->start_kernel_timer);
+			//Esco dalla kernel mode	
+			currentProc->start_user_timer = 0;
+		}
+	//Entro in user mode
+	currentProc->start_user_timer = getTODLO();
+	}
+}
+
+
+//funzione ausiliaria utilizzata per poter realizzare la ricorsione
+void terminateProcess_exec(pcb_t *root){
+	while (!emptyChild(root)){
+		pcb_t *child = removeChild(root);
+		if (child != NULL) 
+			terminateProcess_exec(child);
+	}		
+	outReadyQueue(root);
+	freePcb(root);
+}

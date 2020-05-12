@@ -21,7 +21,6 @@ extern void termprint(char *str);
 #define GET_PID 8
 
 extern pcb_t* currentProc;
-extern excarea_t excareas[3];
 
 void syscall_handler(){
 	kernel_timer_update(currentProc);
@@ -53,7 +52,7 @@ void syscall_handler(){
 				passeren((int*)arg1);
 			break;
 			case SPEC_PASSUP:
-				sys7((int)arg1,(state_t*)arg2,(state_t*)arg3);
+				spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
 				break;
 			default:
 				special_handler(0,p,arg1,arg2,arg3);
@@ -103,13 +102,13 @@ void trap_handler(){
 
 void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3){
 	termprint("Entering special handler...\n");
-	if (excareas[type].used == 1){
+	if (currentProc->excareas[type].used == 1){
 		/*passo i parametri in caso sia una syscall*/
 		if(type == 0){
 			/*idk actually?*/
 		}
-		ownmemcpy(oldarea, excareas[type].oldarea, sizeof(state_t));
-		state_t* p = (excareas[type].newarea);
+		ownmemcpy(oldarea, currentProc->excareas[type].oldarea, sizeof(state_t));
+		state_t* p = (currentProc->excareas[type].newarea);
 		LDST(TO_LOAD(p));
 	}
 	else{

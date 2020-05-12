@@ -48,7 +48,11 @@ pcb_t *allocPcb(void) {
 		INIT_LIST_HEAD(&(temp->p_sib));
 		temp->priority = 0;
 		temp->p_semkey = NULL;
-		ownmemset(&temp->p_s, 0, sizeof(temp->p_s));
+		ownmemset(&temp->p_s, 0, sizeof(state_t));
+		int i;
+		for(i = 0; i < 3; i++){
+			ownmemset(&temp->excareas[i], 0, sizeof(excarea_t));
+		}
 
 		/*Ritorno il puntatore temporaneo per terminare la funzione*/
 		return temp;
