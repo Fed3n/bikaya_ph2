@@ -74,6 +74,8 @@
 #define ST_A1 reg_a1
 #define ST_A2 reg_a2
 #define ST_A3 reg_a3
+/*accesso al registro in cui inserire il valore di ritorno*/
+#define ST_RET reg_v0
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc_epc
 
@@ -100,6 +102,8 @@
 #define ST_A1 a2
 #define ST_A2 a3
 #define ST_A3 a4
+/*accesso al registro in cui inserire il valore di ritorno*/
+#define ST_RET a1
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc
 
