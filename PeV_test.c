@@ -33,7 +33,7 @@
 #define VMON  0x07000000
 #define VMOFF (~VMON)
 
-#define getTODLO() (*((unsigned int *)BUS_TODLOW))
+//#define getTODLO() (*((unsigned int *)BUS_TODLOW))
 
 #define SP(s)                    s.reg_sp
 #define PC(s)                    s.pc_epc
