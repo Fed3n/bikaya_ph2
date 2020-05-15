@@ -26,6 +26,16 @@ typedef struct excarea_t{
     int used;   /*1 quando l'area è inizializzata*/
 } excarea_t;
 
+/*Struttura per raggruppare i semafori dei device*/
+typedef struct devsem_t{
+    int disksem[N_DEV_PER_IL];
+    int tapesem[N_DEV_PER_IL];
+    int netsem[N_DEV_PER_IL];
+    int printsem[N_DEV_PER_IL];
+    int termrecvsem[N_DEV_PER_IL];
+    int termtransmsem[N_DEV_PER_IL];
+} devsem_t;
+
 /* Process Control Block (PCB) data structure */
 typedef struct pcb_t {
     /*process queue fields */
@@ -65,14 +75,5 @@ typedef struct semd_t {
     // Queue of PCBs blocked on the semaphore
     struct list_head s_procQ;
 } semd_t;
-
-typedef struct semdev {
-    semd_t disk[DEV_PER_INT];
-    semd_t tape[DEV_PER_INT];
-    semd_t network[DEV_PER_INT];
-    semd_t printer[DEV_PER_INT];
-    semd_t terminalR[DEV_PER_INT];
-    semd_t terminalT[DEV_PER_INT];
-} semdev;
 
 #endif

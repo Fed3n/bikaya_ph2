@@ -38,30 +38,26 @@ void termprint(char *str) {
 #endif
 
 extern void test();
+extern void print();
 
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
 int main(){
 	initAreas();
-	termprint("AREA DONE!\n");
 
 	initPcbs();
-	termprint("PCB DONE!\n");
 
 	initASL();
-	termprint("ASL DONE!\n");
+
+	initStructs();
 
 	pcb_t* proc_test = allocPcb();
 	initProcess_KM(proc_test, test, 1);
 
-	termprint("PROCESS INITIALIZED!\n");
-
 	initReadyQueue();
 	insertReadyQueue(proc_test);
 
-	termprint("PROCESS QUEUED!\n");
-
 	setTIMER(ACK_SLICE);
-	termprint("Now calling scheduler...\n");
+
 	schedule();
 	
 	HALT();

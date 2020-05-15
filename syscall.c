@@ -13,7 +13,9 @@ extern void termprint(char *str);
 #endif
 
 extern pcb_t* currentProc;
+extern int devsem[48];
 
+#define getTODLO() 1
 
 /*************************************/
 /* SYSTEM CALL                       */
@@ -51,8 +53,10 @@ void/*int*/ createProcess(state_t* statep, int priority, void** cpid){
 void terminateProcess(void* pid){
 	//if (pid    bisogna fare una funzione che mi dica se un pcb_t è allocato o no
 	if (pid == NULL) {
-		terminateProcess_exec(currentProc);
-		currentProc = NULL;
+		if (currentProc != NULL){
+			terminateProcess_exec(currentProc);
+			currentProc = NULL;
+		}
 	} else
 		terminateProcess_exec(pid);
 	//return 0;
@@ -60,27 +64,46 @@ void terminateProcess(void* pid){
 }
 
 //rilascio del semaforo
-void verhogen(int *semaddr){
+void verhogen(int* semaddr){
+	//termprint("V\n");
 	if (headBlocked(semaddr) != NULL){
 		pcb_t *p = removeBlocked(semaddr);
 		if (p != NULL)
 			insertReadyQueue(p);
-	} else {
-		
-		termprint("semaforo  vuoto");
-
+	} else
 		(*semaddr)++;
-	}
+	//termprint("Calling schedule after V...\n");
 	schedule();
 }	
 
 //richiesta di un semaforo
-void passeren(int *semaddr){
-	if (*semaddr <= 0){		
+void passeren(int* semaddr){
+	//termprint("P\n");
+	if (*semaddr <= 0){
 		if (insertBlocked(semaddr,currentProc))
 			termprint("ERROR: no more semaphores available!");
-	}else
+		currentProc = NULL;
+	}else{
 		(*semaddr)--;
+	}
+	schedule();
+}
+
+void do_IO(unsigned int command, unsigned int* reg, int subdevice){
+	//termprint("do_IO called...\n");
+	devreg_t* devp = (devreg_t*)reg;
+	/*ottengo puntatore al semaforo corrispondente*/
+	//int* sem = &(devsem.disksem[0])+DEVSEM_N((unsigned int)reg);
+	int i = DEVSEM_N((unsigned int)reg);
+	if(subdevice)
+		devp->term.recv_command = command;
+	else{
+		/*se devo trasmettere allora scalo di 8 semafori per quello giusto*/
+		i += N_DEV_PER_IL;
+		devp->term.transm_command = command;
+	}
+	SYSCALL(PASSEREN,(int)&devsem[i],0,0);
+	/*non dovrebbe eseguire oltre ma per evitare di bloccare il sistema nel caso...*/
 	schedule();
 }
 

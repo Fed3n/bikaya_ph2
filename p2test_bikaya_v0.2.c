@@ -5,13 +5,13 @@
 
 /*********************************P2TEST.C*******************************
  *
- *	Test program for the Bikaya Kernel: phase 2.
+ *  Test program for the Bikaya Kernel: phase 2.
  *
- *	Produces progress messages on Terminal0.
+ *  Produces progress messages on Terminal0.
  *
- *	This is pretty convoluted code, so good luck!
+ *  This is pretty convoluted code, so good luck!
  *
- *		Aborts as soon as an error is detected.
+ *      Aborts as soon as an error is detected.
  *
  *      Modified by Michael Goldweber on May 15, 2004
  *      Modified by Davide Brini on Nov 26, 2004
@@ -21,9 +21,9 @@
  */
 
 #ifdef TARGET_UMPS
-#include "umps_include/libumps.h"
-#include "umps_include/arch.h"
-#include "umps_include/types.h"
+#include "libumps.h"
+#include "arch.h"
+#include "types.h"
 #define FRAME_SIZE 4096
 /* Elapsed clock ticks (CPU instructions executed) since system power on.
    Only the "low" part is actually used. */
@@ -46,9 +46,9 @@
 #endif
 
 #ifdef TARGET_UARM
-#include "uarm_include/libuarm.h"
-#include "uarm_include/arch.h"
-#include "uarm_include/uARMtypes.h"
+#include "libuarm.h"
+#include "arch.h"
+#include "uARMtypes.h"
 
 #define VMON  0x00000001
 #define VMOFF (~VMON)
@@ -81,7 +81,7 @@ typedef unsigned int pid_t;
 #define TERMCHARMASK 0xFF00
 
 #define MINLOOPTIME 1000
-#define LOOPNUM     1000
+#define LOOPNUM     10000
 
 #define BADADDR 0xFFFFFFFF /* could be 0x00000000 as well */
 
@@ -151,71 +151,25 @@ unsigned int set_sp_pc_status(state_t *s, state_t *copy, unsigned int pc) {
 }
 
 
-
-#define print(msg) termprint(msg)
-
-
-//STAMPA
-
-#ifdef TARGET_UMPS
-static termreg_t *term0_reg = (termreg_t *)DEV_REG_ADDR(IL_TERMINAL, 0);
-
-static unsigned int tx_status(termreg_t *tp) {
-    return ((tp->transm_status) & TERM_STATUS_MASK);
-}
-
-void termprint(char *str) {
-    while (*str) {
-        unsigned int stat = tx_status(term0_reg);
-        if (stat != ST_READY && stat != ST_TRANSMITTED)
-            return;
-
-        term0_reg->transm_command = (((*str) << CHAR_OFFSET) | CMD_TRANSMIT);
-
-        while ((stat = tx_status(term0_reg)) == ST_BUSY)
-            ;
-
-        term0_reg->transm_command = CMD_ACK;
-
-        if (stat != ST_TRANSMITTED)
-            return;
-        else
-            str++;
-    }
-}
-#endif
-#ifdef TARGET_UARM
-#define termprint(str) tprint(str);
-#endif
-
-
-//
-
-
-
-
 /* a procedure to print on terminal 0 */
-/*
 void print(char *msg) {
     unsigned int command;
     char *       s    = msg;
     devregtr *   base = (devregtr *)DEV_REG_ADDR(IL_TERMINAL, 0);     // (devregtr *)(TERM0ADDR);
     devregtr     status;
 
-    SYSCALL(PASSEREN, (int)&term_mut, 0, 0); 
+    SYSCALL(PASSEREN, (int)&term_mut, 0, 0); /* get term_mut lock */
 
-*//* get term_mut lock */
-
-  //  while (*s != '\0') {
+    while (*s != '\0') {
         /* Put "transmit char" command+char in term0 register (3rd word). This
                  actually starts the operation on the device! */
-  //      command = PRINTCHR | (((devregtr)*s) << BYTELEN);
+        command = PRINTCHR | (((devregtr)*s) << BYTELEN);
 
         /* Wait for I/O completion (SYS8) */
-   //     status = SYSCALL(WAITIO, command, (int)base, FALSE);
+        status = SYSCALL(WAITIO, command, (int)base, FALSE);
 
-        /*		PANIC(); */
-/*
+        /*      PANIC(); */
+
         if ((status & TERMSTATMASK) != TRANSM)
             PANIC();
 
@@ -225,23 +179,14 @@ void print(char *msg) {
         s++;
     }
 
-    SYSCALL(VERHOGEN, (int)&term_mut, 0, 0); 
-
-*//* release term_mut */
-//}
+    SYSCALL(VERHOGEN, (int)&term_mut, 0, 0); /* release term_mut */
+}
 
 
 /*                                                                   */
 /*                 p1 -- the root process                            */
 /*                                                                   */
 void test() {
-
-
-
-	if (startp2 == 0) print("a ");
-	if (endp2 == 0) print("b ");
-	print("\n");
-
 
     SYSCALL(VERHOGEN, (int)&testsem, 0, 0); /* V(testsem)   */
 
@@ -306,9 +251,9 @@ void test() {
     SYSCALL(PASSEREN, (int)&endp4, 0, 0);
     print("p1 knows p4 ended\n");
 
-    SYSCALL(CREATEPROCESS, (int)&p5state, DEFAULT_PRIORITY, 0); /* start p5		*/
+    SYSCALL(CREATEPROCESS, (int)&p5state, DEFAULT_PRIORITY, 0); /* start p5     */
 
-    SYSCALL(CREATEPROCESS, (int)&p6state, DEFAULT_PRIORITY, 0); /* start p6		*/
+    SYSCALL(CREATEPROCESS, (int)&p6state, DEFAULT_PRIORITY, 0); /* start p6     */
 
     SYSCALL(VERHOGEN, (int)&blkp7, 0, 0);
 
@@ -376,12 +321,9 @@ void p2() {
     now1 = getTODLO();                                                       /* time of day   */
     SYSCALL(GETCPUTIME, (int)&user_t1, (int)&kernel_t1, (int)&wallclock_t1); /* CPU time used */
 
-    int localsem = 0;
     /* delay for some time */
-    for (i = 1; i < LOOPNUM; i++) {
-        SYSCALL(VERHOGEN, (int)&localsem, 0, 0);
-        SYSCALL(PASSEREN, (int)&localsem, 0, 0);
-    }
+    for (i = 1; i < LOOPNUM; i++)
+        ;
 
     SYSCALL(GETCPUTIME, (int)&user_t2, (int)&kernel_t2, (int)&wallclock_t2); /* CPU time used */
     now2 = getTODLO();                                                       /* time of day  */

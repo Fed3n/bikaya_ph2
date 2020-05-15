@@ -47,6 +47,8 @@
 
 #define TIME_SLICE 3000
 #define ACK_SLICE TIME_SLICE*(*(memaddr *)BUS_REG_TIME_SCALE)
+/*ritorna il numero di semaforo della struttura devsem_t corrispondente al device*/
+#define DEVSEM_N(reg) (((reg)-DEV_REG_START)/(DEV_REG_SIZE))
 #define INTER_PROCESSOR_INTERRUPT 0
 #define PROCESSOR_LOCAL_TIMER 1
 #define BUS_INTERVAL_TIMER 2
@@ -66,6 +68,8 @@
 #define STATUS_ALL_INT_DISABLE_KM_LT(status) ((status) | (STATUS_TE))
 /*interrupt disabled eccetto i timer, kernel mode, virtual memory off*/
 #define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE(status) STATUS_ALL_INT_ENABLE_KM(status)
 
 /*macro da passare a LDST*/
 #define TO_LOAD(status) (status)
@@ -75,11 +79,14 @@
 #define ST_A1 reg_a1
 #define ST_A2 reg_a2
 #define ST_A3 reg_a3
+#define ST_SYSRETURN reg_v0
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc_epc
 
 /*macro per controllare la linea corrispondente dell'interrupt*/
 #define INTERRUPT_LINE_CAUSE(cause, line) ((cause) & CAUSE_IP(line))
+/*macro per ottenere interrupting device map register*/
+#define INT_BIT_VEC(line) (0x1000003C + (EXT_IL_INDEX(line) * 4))
 /*la seguente macro ritorna il valore del bit cause prendendo in input lo state_t corrispondente*/
 #define CAUSE_REG(area) CAUSE_GET_EXCCODE(area->cause)
 
@@ -101,11 +108,14 @@
 #define ST_A1 a2
 #define ST_A2 a3
 #define ST_A3 a4
+#define ST_SYSRETURN a1
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc
 
 /*macro per controllare la linea corrispondente dell'interrupt*/
 #define INTERRUPT_LINE_CAUSE(cause, line) CAUSE_IP_GET(cause, line)
+/*macro per ottenere interrupting device map register*/
+#define INT_BIT_VEC(line) INT_DEV_VECTOR(line)
 /*la seguente macro ritorna il valore del bit cause prendendo in input lo state_t corrispondente*/
 #define CAUSE_REG(area) CAUSE_EXCCODE_GET(area->CP15_Cause)
 

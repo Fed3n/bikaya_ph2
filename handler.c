@@ -51,6 +51,9 @@ void syscall_handler(){
 			case PASSEREN:
 				passeren((int*)arg1);
 			break;
+			case IO_COMMAND:
+				do_IO((unsigned int)arg1,(unsigned int*)arg2, (int)arg3);
+			break;
 			case SPEC_PASSUP:
 				spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
 				break;
@@ -74,6 +77,7 @@ void interrupt_handler(){
 		ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
 	}
 	int line = 0;
+	int i;
 	while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) line++;
 	/*Siccome il PLT non e’ presente su uARM, e’
 	conveniente sfruttare l’interval timer su
@@ -81,9 +85,56 @@ void interrupt_handler(){
 	switch(line){
 		case PROCESSOR_LOCAL_TIMER:
 			interrupt12();
+			break;
 		case BUS_INTERVAL_TIMER:
 			interrupt12();
+			break;
+		case DISK_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(DISK_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case TYPE_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TYPE_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case NETWORK_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(NETWORK_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case PRINTER_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(PRINTER_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case TERMINAL_DEVICES:
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
+				if(*bit_vec & (1<<i)){
+					termInterrupt(i);
+				}
+			}
+			break;
 		default:
+			HALT();
 			termprint("Interrupt line not yet managed.\n");
 			HALT();
 	}

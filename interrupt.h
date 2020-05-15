@@ -3,8 +3,10 @@
 #include "pcb.h"
 #include "const.h"
 
-void interrupt_handler();
-
 void interrupt12();
+
+void devInterrupt(int line, int dev);
+
+void termInterrupt(int dev);
 
 #endif

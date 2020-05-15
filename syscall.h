@@ -12,9 +12,13 @@ void verhogen(int *semaddr);
 
 void passeren(int *semaddr);
 
+void do_IO(unsigned int command, unsigned int* reg, int subdevice);
+
 int spec_passup(int type, state_t* old, state_t* new);
 
 void kernel_timer_update(pcb_t *currentProc);
+
+void user_timer_update(pcb_t *currentProc);
 
 void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallclock);
 

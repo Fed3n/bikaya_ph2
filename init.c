@@ -3,6 +3,8 @@
 #include "handler.h"
 #include "auxfun.h"
 
+extern int devsem[48];
+
 #ifdef TARGET_UMPS
 /*inizializza l'exception area in kernel mode, interrupt disabilitati*/
 void initExcarea(state_t* p, void* handler){
@@ -14,9 +16,21 @@ void initExcarea(state_t* p, void* handler){
 	p->status = STATUS_ALL_INT_DISABLE_KM_LT(p->status);
 }
 
-/*inizializza processo in kernel mode, interrupt disabilitati escluso timer*/
+/*inizializza processo in kernel mode, interrupt abilitati*/
 /*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
 void initProcess_KM(pcb_t* p, void* fun, int n){
+	p->p_s.reg_sp = (RAMTOP-(RAM_FRAMESIZE*n));
+	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
+	p->p_s.pc_epc = (memaddr)fun;
+	p->p_s.reg_t9 = (memaddr)fun;
+	p->p_s.status = STATUS_ALL_INT_ENABLE_KM(p->p_s.status);
+	p->original_priority = n;
+	p->priority = n;
+}
+
+/*inizializza processo in kernel mode, interrupt disabilitati escluso timer*/
+/*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
+void initProcess_KM_noINT(pcb_t* p, void* fun, int n){
 	p->p_s.reg_sp = (RAMTOP-(RAM_FRAMESIZE*n));
 	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
 	p->p_s.pc_epc = (memaddr)fun;
@@ -38,9 +52,21 @@ void initExcarea(state_t* p, void* handler){
 	p->CP15_Control = CP15_DISABLE_VM(p->CP15_Control);
 }
 
-/*inizializza processo in kernel mode, interrupt disabilitati escluso timer*/
+/*inizializza processo in kernel mode, interrupt abilitati*/
 /*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
 void initProcess_KM(pcb_t* p, void* fun, int n){
+	p->p_s.pc = (memaddr)fun;
+	p->p_s.sp = (RAMTOP-(RAM_FRAMESIZE*n));
+	p->p_s.cpsr = (p->p_s.cpsr | STATUS_SYS_MODE);
+	p->p_s.cpsr = STATUS_ALL_INT_ENABLE(p->p_s.cpsr);
+	p->p_s.CP15_Control = CP15_DISABLE_VM(p->p_s.CP15_Control);
+	p->original_priority = n;
+	p->priority = n;
+}
+
+/*inizializza processo in kernel mode, interrupt disabilitati escluso timer*/
+/*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
+void initProcess_KM_noINT(pcb_t* p, void* fun, int n){
 	p->p_s.pc = (memaddr)fun;
 	p->p_s.sp = (RAMTOP-(RAM_FRAMESIZE*n));
 	p->p_s.cpsr = (p->p_s.cpsr | STATUS_SYS_MODE);
@@ -65,4 +91,8 @@ initExcarea((state_t *)PGMTRAP_NEWAREA, trap_handler);
 
 /*AREA SYSKB*/
 initExcarea((state_t *)SYSBK_NEWAREA, syscall_handler);
+}
+
+void initStructs(){
+	ownmemset(&devsem,0,48*sizeof(int));
 }

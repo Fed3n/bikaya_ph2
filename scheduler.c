@@ -8,12 +8,14 @@ HIDDEN LIST_HEAD(readyQueue_h);
 /*Puntatore a processo corrente*/
 pcb_t* currentProc;
 
+
 /***AREA MOLTO SPERIMENTALE***/
 /*stato di attesa caricato se la ready queue è vuota in attesa di un nuovo processo*/
 state_t waitingState;
 
 /*la WAIT() è molto meno cpu consuming di un busy waiting*/
-static void wait4proc(){
+void wait4proc(){
+	HALT();
 	WAIT();
 }
 
@@ -21,11 +23,11 @@ static void wait4proc(){
 #ifdef TARGET_UMPS
 void initWaitingProc(){
 	ownmemset(&waitingState, 0, sizeof(state_t));
-	waitingState.reg_sp = (RAMTOP-(RAM_FRAMESIZE));
+	waitingState.reg_sp = (RAMTOP-(RAM_FRAMESIZE*21));
 	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
 	waitingState.pc_epc = (memaddr)wait4proc;
 	waitingState.reg_t9 = (memaddr)wait4proc;
-	waitingState.status = STATUS_ALL_INT_ENABLE_KM_LT(waitingState.status);
+	waitingState.status = STATUS_ALL_INT_ENABLE_KM(waitingState.status);
 }
 #endif
 
@@ -33,10 +35,9 @@ void initWaitingProc(){
 void initWaitingProc(){
 	ownmemset(&waitingState, 0, sizeof(state_t));
 	waitingState.pc = (memaddr)wait4proc;
-	waitingState.sp = (RAMTOP-(RAM_FRAMESIZE));
+	waitingState.sp = (RAMTOP-(RAM_FRAMESIZE*21));
 	waitingState.cpsr = (waitingState.cpsr | STATUS_SYS_MODE);
-	waitingState.cpsr = STATUS_DISABLE_INT(waitingState.cpsr);
-	waitingState.cpsr = STATUS_ENABLE_TIMER(waitingState.cpsr);
+	waitingState.cpsr = STATUS_ALL_INT_ENABLE(waitingState.cpsr);
 	waitingState.CP15_Control = CP15_DISABLE_VM(waitingState.CP15_Control);
 }
 #endif
@@ -100,17 +101,18 @@ void schedule(){
 		insertReadyQueue(currentProc);
 	}
 
-	/*Se non ci sono processi da schedulare, lo scheduler attende*/
+	/*Se non ci sono processi da schedulare, lo scheduler attende e abilita interrupt*/
 	if(emptyReadyQueue()){
-		/*Carico uno stato che attende con interrupt abilitati*/
-		LDST(TO_LOAD((&waitingState)));
+		setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+		WAIT();
 	}
-	
+
 	//Avvio il processo in user mode
 	user_timer_update(currentProc);	
 
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();
+	setTIMER(ACK_SLICE);
 	state_t* p = &(currentProc->p_s);
 	LDST(TO_LOAD(p));
 }

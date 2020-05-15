@@ -3,6 +3,7 @@
 
 #define ST_READY         1
 #define ST_BUSY          3
+#define ST_RECEIVED   	 5
 #define ST_TRANSMITTED   5
 #define CMD_ACK          1
 #define CMD_TRANSMIT     2
