@@ -34,21 +34,17 @@ void devInterrupt(int line, int dev){
 }
 
 void termInterrupt(int dev){
-	//termprint("term interrupt!\n");
 	termreg_t* devreg = (termreg_t*)DEV_REG_ADDR(TERMINAL_DEVICES,dev);
-	/*ottengo il puntatore al semaforo del device corrispondente*/
-	//int* sem = &(devsem.disksem[0]) + DEVSEM_N((unsigned int)devreg);
 	int i = DEVSEM_N((unsigned int)devreg);
-
 	unsigned int return_value = 0;
 	if(devreg->recv_status == ST_RECEIVED){
-		devreg->recv_command = CMD_ACK;
 		return_value = devreg->recv_status;
+		devreg->recv_command = CMD_ACK;
 	}
 	else{
 		i += N_DEV_PER_IL;
-		devreg->transm_command = CMD_ACK;
 		return_value = devreg->transm_status;
+		devreg->transm_command = CMD_ACK;
 	}
 	/*mando il valore di ritorno della Do_IO al processo*/
 	pcb_t* p = headBlocked(&devsem[i]);

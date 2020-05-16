@@ -15,8 +15,6 @@ extern void termprint(char *str);
 extern pcb_t* currentProc;
 extern int devsem[48];
 
-#define getTODLO() 1
-
 /*************************************/
 /* SYSTEM CALL                       */
 /*************************************/
@@ -92,8 +90,7 @@ void passeren(int* semaddr){
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 	//termprint("do_IO called...\n");
 	devreg_t* devp = (devreg_t*)reg;
-	/*ottengo puntatore al semaforo corrispondente*/
-	//int* sem = &(devsem.disksem[0])+DEVSEM_N((unsigned int)reg);
+
 	int i = DEVSEM_N((unsigned int)reg);
 	if(subdevice)
 		devp->term.recv_command = command;
@@ -102,7 +99,8 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 		i += N_DEV_PER_IL;
 		devp->term.transm_command = command;
 	}
-	SYSCALL(PASSEREN,(int)&devsem[i],0,0);
+	//SYSCALL(PASSEREN,(int)&devsem[i],0,0);
+	passeren(&devsem[i]);
 	/*non dovrebbe eseguire oltre ma per evitare di bloccare il sistema nel caso...*/
 	schedule();
 }
