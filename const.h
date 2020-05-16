@@ -47,6 +47,8 @@
 
 #define TIME_SLICE 3000
 #define ACK_SLICE TIME_SLICE*(*(memaddr *)BUS_REG_TIME_SCALE)
+/*ritorna il numero di semaforo della struttura devsem_t corrispondente al device*/
+#define DEVSEM_N(reg) (((reg)-DEV_REG_START)/(DEV_REG_SIZE))
 #define INTER_PROCESSOR_INTERRUPT 0
 #define PROCESSOR_LOCAL_TIMER 1
 #define BUS_INTERVAL_TIMER 2
@@ -67,7 +69,7 @@
 /*interrupt disabled eccetto i timer, kernel mode, virtual memory off*/
 #define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
 #define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
-#define STATUS_ALL_INT_ENABLE(status) ((status) | (0xFF << 8))
+#define STATUS_ENABLE_ALL_INT(status) ((status) | (0xFF << 8))
 
 /*macro da passare a LDST*/
 #define TO_LOAD(status) (status)
@@ -102,6 +104,8 @@
 
 
 #ifdef TARGET_UARM
+
+#define STATUS_ENABLE_ALL_INT(status) STATUS_ALL_INT_ENABLE(status)
 /*macro per usare LDST su uarm*/
 #define TO_LOAD(status) &(status->a1)
 

@@ -27,7 +27,6 @@ void interrupt12(){
 void devInterrupt(int line, int dev){
 	dtpreg_t* devreg = (dtpreg_t*)DEV_REG_ADDR(line, dev);
 	/*ottengo il puntatore al semaforo del device corrispondente*/
-	//int* sem = &(devsem.disksem[0]) + DEVSEM_N((unsigned int)devreg);
 	int i = DEVSEM_N((unsigned int)devreg);
 	devreg->command = CMD_ACK;
 	verhogen(&devsem[i]);
@@ -48,7 +47,7 @@ void termInterrupt(int dev){
 	}
 	/*mando il valore di ritorno della Do_IO al processo*/
 	pcb_t* p = headBlocked(&devsem[i]);
-	p->p_s.ST_SYSRETURN = return_value;
+	p->p_s.ST_RET = return_value;
 
 	verhogen(&devsem[i]);
 }

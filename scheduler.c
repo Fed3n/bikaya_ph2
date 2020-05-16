@@ -103,7 +103,7 @@ void schedule(){
 
 	/*Se non ci sono processi da schedulare, lo scheduler attende e abilita interrupt*/
 	if(emptyReadyQueue()){
-		setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+		setSTATUS(STATUS_ENABLE_ALL_INT(getSTATUS()));
 		WAIT();
 	}
 

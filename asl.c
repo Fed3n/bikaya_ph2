@@ -1,8 +1,6 @@
 #include "asl.h"
 #include "pcb.h"
 
-#define VERHOGEN 4
-
 /* Global Variables*/
 HIDDEN semd_t semd_table[MAXPROC]; 
 HIDDEN LIST_HEAD(semdFree_h);
@@ -45,10 +43,8 @@ semd_t* getSemd(int *key)
 }
 
 /* aggiunge un PCB alla lista dei processi bloccati sul semaforo
-
 	key: chiave del semaforo
 	p: puntatore al PBC	
-
 	return: TRUE se il SEMD richiesto non è disponibile in quanto sono terminati i semafori disponibili
 */	
 
@@ -76,7 +72,6 @@ int insertBlocked(int *key, pcb_t *p)
 }
 
 /* rimuove il primo processo bloccato sulla coda dei processi del semaforo relativo
-
 	key: chiave del semaforo
 	
 	return: puntatore al PCB che è stato rimosso; ritorna NULL se il semaforo indicato non è presente nella ASL
@@ -106,16 +101,12 @@ pcb_t* removeBlocked(int *key)
 }
 
 /* rimuove il processo puntato da p dalla coda dei processi del semaforo su cui è bloccato
-
 	p: puntatore al processo da rimuovere
-
-	flag: valore che se è settato a 1 non rimuove il processo
-
 	return: il puntatore al processo rimosso; NULL se il processo non è stato trovato nella coda dei processi bloccati
 		sul semaforo indicato nel campo p->semkey
 */
 
-pcb_t* outBlocked(pcb_t *p, int flag)
+pcb_t* outBlocked(pcb_t *p)
 {
 	pcb_t *pcb = NULL;
 	if (p != NULL)
@@ -130,18 +121,17 @@ pcb_t* outBlocked(pcb_t *p, int flag)
 					pcb = p;					
 					break;
 				}
-			//se la flag è 0 rimuovo il processo
-			if (pcb != NULL && !flag)
+			if (pcb != NULL)
 			{
 				__list_del(p->p_next.prev,p->p_next.next);
-				pcb->p_semkey = p->p_semkey;
+				pcb->p_semkey = semd->s_key;
 				//dopo la rimozione del processo controllo se il semaforo è ancora utilizzato
 				if (list_empty(&semd->s_procQ)) 
 				{
 					list_del(&semd->s_next);	
 					semd->s_key = NULL;
 					list_add(&semd->s_next,&semdFree_h);
-				}				
+				}
 			}
 		}
 	}
@@ -149,7 +139,6 @@ pcb_t* outBlocked(pcb_t *p, int flag)
 }
 
 /* restutuisce il puntatore al PCB in testa alla coda dei processi del semaforo identificato da key senza rimuovere il processo
-
 	key: chiave del semaforo
 	
 	return: processo in testa alla coda; NULL se il semaforo non è nella ASL e quindi non ha processi in coda
@@ -165,9 +154,7 @@ pcb_t* headBlocked(int *key)
 }
 
 /* rimuove il processo puntato da p dalla coda dei processi del semaforo su cui è bloccato e fa lo stesso su tutti 
-   i processi dell'albero radicato in p 
-   la funzione si occupa anche di gestire i semafori su cui sono bloccati i processi
-
+   i processi dell'albero radicato in p
 	p: puntatore al processo da rimuovere
 */
 
@@ -175,15 +162,7 @@ void outChildBlocked(pcb_t *p)
 {
 	if (p != NULL)
 	{
-		//Questa funzione viene chiamata solamente dalla system call terminate process, essa si occupa di 
-		//terminare un processo e tutti i suoi figli. la funzione outChildBlocked si occupa di rimuovere 
-		//il processo da terminare e tutti i suoi figli dai semafori su cui si trovano. E' però fondamentale
-		//effettuare una Verhogen nel caso in cui il processo da rimuovere sia in critical section. In caso 
-		//contrario verrebbe rimosso senza avere la possibilità di fare una Verhogen e porterebbe problemi al semaforo
-		if (p->p_cskey != NULL) 
-			SYSCALL(VERHOGEN, (int)p->p_cskey, 0, 0);
-		//successivamente rimuovo il processo dalla coda del semaforo su cui è bloccato
-		pcb_t *pcb = outBlocked(p,0);
+		pcb_t *pcb = outBlocked(p);
 		pcb_t *pcb_son = NULL;
 		do {
 			pcb_son = removeChild(pcb);
@@ -191,5 +170,3 @@ void outChildBlocked(pcb_t *p)
 		} while (pcb_son != NULL);
 	}
 }
-
-

@@ -26,6 +26,7 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	if(user != NULL) *user = currentProc->total_user_timer;
 	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
 	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
+	schedule();
 }
 
 //crea un nuovo processo
@@ -63,20 +64,17 @@ void terminateProcess(void* pid){
 
 //rilascio del semaforo
 void verhogen(int* semaddr){
-	//termprint("V\n");
 	if (headBlocked(semaddr) != NULL){
 		pcb_t *p = removeBlocked(semaddr);
 		if (p != NULL)
 			insertReadyQueue(p);
 	} else
 		(*semaddr)++;
-	//termprint("Calling schedule after V...\n");
 	schedule();
 }	
 
 //richiesta di un semaforo
 void passeren(int* semaddr){
-	//termprint("P\n");
 	if (*semaddr <= 0){
 		if (insertBlocked(semaddr,currentProc))
 			termprint("ERROR: no more semaphores available!");

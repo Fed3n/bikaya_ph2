@@ -38,9 +38,9 @@ void syscall_handler(){
 
 		switch (sysNum){
 			case CREATE_PROC:
-				retvalue = createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
+				/*retvalue = */createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
 			case TERMINATE_PROC:
-				retvalue = terminateProcess((int*)arg1);
+				/*retvalue = */terminateProcess((int*)arg1);
 			break;
 			case VERHOGEN:
 				verhogen((int*)arg1);			
@@ -146,13 +146,13 @@ void tlb_handler(){
 }
 
 void trap_handler(){
-	termprint("Trap handler called\n");
+	//termprint("Trap handler called\n");
 	state_t* p = (state_t *)PGMTRAP_OLDAREA;
 	special_handler(2,p,0,0,0);
 }
 
 void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3){
-	termprint("Entering special handler...\n");
+	//termprint("Entering special handler...\n");
 	if (currentProc->excareas[type].used == 1){
 		/*passo i parametri in caso sia una syscall*/
 		if(type == 0){
@@ -163,7 +163,7 @@ void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int
 		LDST(TO_LOAD(p));
 	}
 	else{
-		termprint("Tipo speciale non definito.\n");
+		//termprint("Tipo speciale non definito.\n");
 		SYSCALL(3,0,0,0);
 	}
 }
