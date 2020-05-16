@@ -1,6 +1,8 @@
 #include "asl.h"
 #include "pcb.h"
 
+#define VERHOGEN 4
+
 /* Global Variables*/
 HIDDEN semd_t semd_table[MAXPROC]; 
 HIDDEN LIST_HEAD(semdFree_h);
@@ -107,11 +109,13 @@ pcb_t* removeBlocked(int *key)
 
 	p: puntatore al processo da rimuovere
 
+	flag: valore che se è settato a 1 non rimuove il processo
+
 	return: il puntatore al processo rimosso; NULL se il processo non è stato trovato nella coda dei processi bloccati
 		sul semaforo indicato nel campo p->semkey
 */
 
-pcb_t* outBlocked(pcb_t *p)
+pcb_t* outBlocked(pcb_t *p, int flag)
 {
 	pcb_t *pcb = NULL;
 	if (p != NULL)
@@ -126,17 +130,18 @@ pcb_t* outBlocked(pcb_t *p)
 					pcb = p;					
 					break;
 				}
-			if (pcb != NULL)
+			//se la flag è 0 rimuovo il processo
+			if (pcb != NULL && !flag)
 			{
 				__list_del(p->p_next.prev,p->p_next.next);
-				pcb->p_semkey = semd->s_key;
+				pcb->p_semkey = p->p_semkey;
 				//dopo la rimozione del processo controllo se il semaforo è ancora utilizzato
 				if (list_empty(&semd->s_procQ)) 
 				{
 					list_del(&semd->s_next);	
 					semd->s_key = NULL;
 					list_add(&semd->s_next,&semdFree_h);
-				}
+				}				
 			}
 		}
 	}
@@ -160,7 +165,8 @@ pcb_t* headBlocked(int *key)
 }
 
 /* rimuove il processo puntato da p dalla coda dei processi del semaforo su cui è bloccato e fa lo stesso su tutti 
-   i processi dell'albero radicato in p
+   i processi dell'albero radicato in p 
+   la funzione si occupa anche di gestire i semafori su cui sono bloccati i processi
 
 	p: puntatore al processo da rimuovere
 */
@@ -169,7 +175,15 @@ void outChildBlocked(pcb_t *p)
 {
 	if (p != NULL)
 	{
-		pcb_t *pcb = outBlocked(p);
+		//Questa funzione viene chiamata solamente dalla system call terminate process, essa si occupa di 
+		//terminare un processo e tutti i suoi figli. la funzione outChildBlocked si occupa di rimuovere 
+		//il processo da terminare e tutti i suoi figli dai semafori su cui si trovano. E' però fondamentale
+		//effettuare una Verhogen nel caso in cui il processo da rimuovere sia in critical section. In caso 
+		//contrario verrebbe rimosso senza avere la possibilità di fare una Verhogen e porterebbe problemi al semaforo
+		if (p->p_cskey != NULL) 
+			SYSCALL(VERHOGEN, (int)p->p_cskey, 0, 0);
+		//successivamente rimuovo il processo dalla coda del semaforo su cui è bloccato
+		pcb_t *pcb = outBlocked(p,0);
 		pcb_t *pcb_son = NULL;
 		do {
 			pcb_son = removeChild(pcb);

@@ -47,8 +47,6 @@
 
 #define TIME_SLICE 3000
 #define ACK_SLICE TIME_SLICE*(*(memaddr *)BUS_REG_TIME_SCALE)
-/*ritorna il numero di semaforo della struttura devsem_t corrispondente al device*/
-#define DEVSEM_N(reg) (((reg)-DEV_REG_START)/(DEV_REG_SIZE))
 #define INTER_PROCESSOR_INTERRUPT 0
 #define PROCESSOR_LOCAL_TIMER 1
 #define BUS_INTERVAL_TIMER 2
@@ -79,7 +77,8 @@
 #define ST_A1 reg_a1
 #define ST_A2 reg_a2
 #define ST_A3 reg_a3
-#define ST_SYSRETURN reg_v0
+/*accesso al registro in cui inserire il valore di ritorno*/
+#define ST_RET reg_v0
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc_epc
 
@@ -111,7 +110,8 @@
 #define ST_A1 a2
 #define ST_A2 a3
 #define ST_A3 a4
-#define ST_SYSRETURN a1
+/*accesso al registro in cui inserire il valore di ritorno*/
+#define ST_RET a1
 /*macro per accedere al pc da state_t*/
 #define ST_PC pc
 

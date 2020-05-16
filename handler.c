@@ -14,7 +14,7 @@ extern void termprint(char *str);
 #define GET_CPU_TIME 1
 #define CREATE_PROC 2
 #define TERMINATE_PROC 3
-#define VERHOGEN 4
+#define VERHOGEN 4 
 #define PASSEREN 5
 #define IO_COMMAND 6
 #define SPEC_PASSUP 7
@@ -23,11 +23,11 @@ extern void termprint(char *str);
 extern pcb_t* currentProc;
 
 void syscall_handler(){
-	kernel_timer_update(currentProc);
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
 	p->ST_PC = p->ST_PC + SYSBP_PC*WORDSIZE;
 	ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
+	int retvalue = 1; //i valori possibili sono 0 e -1, capisco così se è stato modificato
 	/*controllo se l'eccezione sollevata è una system call*/
 	if (CAUSE_REG(p) == SYSCALL_EXC) {
 		/*recupero del tipo e dei parametri della systemcall*/
@@ -37,13 +37,10 @@ void syscall_handler(){
 		unsigned int arg3 = p->ST_A3;
 
 		switch (sysNum){
-			case GET_CPU_TIME:
-				get_cpu_time((unsigned int*)arg1, (unsigned int*)arg2, (unsigned int*)arg3);
-				break;
 			case CREATE_PROC:
-				createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
+				retvalue = createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
 			case TERMINATE_PROC:
-				terminateProcess((int*)arg1);
+				retvalue = terminateProcess((int*)arg1);
 			break;
 			case VERHOGEN:
 				verhogen((int*)arg1);			
@@ -65,10 +62,13 @@ void syscall_handler(){
 		termprint("BREAKPOINT!\n");
 		HALT();
 	}
+	//valore di ritorno (se non è stato modificato)
+	if (retvalue != 1) 
+		p->ST_RET = retvalue;
+	schedule();
 }
 
 void interrupt_handler(){
-	kernel_timer_update(currentProc);
 	/*Se c'è un processo in corso che è stato interrotto*/
 	if(currentProc != NULL){
 		/*PC da decrementare di 1 word su uarm, niente su umps*/

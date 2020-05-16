@@ -1,0 +1,27 @@
+DOCUMENTAZIONE 
+
+Per quanto riguarda la gestione della system call terminate_process abbiamo agito con una logica divide-et-impera utilizzando tre
+diverse funzioni. 
+La system call in questione richiede la terminazione di un processo. Essa dovrà terminare il processo identificato dal parametro inserito, terminare tutti i suoi figli e rimuovere se stesso e tutti i figli dalle code dei semafori su cui sono bloccati. E' inoltre
+necessario ritornare True o False per comunicare il successo o insuccesso della funzione.
+
+La funzione terminateProcess_exec si occupa di terminare il processo ed i suoi figli.
+La funzione existingProcess contribuisce al calcolo del valore di ritorno della funzione. Esso sarà False se il puntatore al pcb_t
+passato come parametro non si riferisce ad un pcb_t attivo o esistente; existingProcess va infatti alla ricerca del processo in readyQueue e nelle code del semaforo indicato nel campo p_semkey di pcb_t e ritorna False in caso la ricerca non abbia successo.
+La funzione outChildBlocked si occupa di rimuovere il processo corrente e tutti i suoi figli dalle code dei semafori su cui sono bloccati. Nel fare ciò è necessario assicurarsi che non venga alterato il funzionamento dei semafori.
+
+Le situazioni che si possono presentare sono le seguenti:
+1) Il processo da terminare si trova nella coda di un semaforo -> può essere terminato senza ulteriori azioni (Se verrà chiamata una Verhogen un altro processo entrerà in sezione critica; Essendo bloccato in coda significa che la Passeren che ha chiamato non ha agito sul valore del semaforo e non è quindi necessario ristabilire nulla)
+2) Il processo da terminare si trova nella sezione critica -> può essere terminato ma deve essere chiamata una Verhogen (Il processo in questione ha liberato la sezione critica perchè è stato terminato ma in quanto tale non potra raggiungere la chiamata Verhogen successiva necessaria a lasciare spazio ad un altro processo)
+3) Il processo da terminare è uscito dalla sezione critica ed ha quindi già effettuato una Verhogen -> il processo può essere terminato senza alterare il semaforo su cui era bloccato
+In conclusione è necessario chiamare una Verhogen solo se il processo da terminare si trova in sezione critica
+
+Per poter eseguire quanto indicato precedentemente abbiamo aggiungento un campo p_cskey alla struttura pcb_t che indica il puntatore al valore del semaforo relativo alla sezione critica in cui si trova il processo (sarà NULL se il processo non è in sezione critica).
+Per poter aggiornare correttamente il suddetto campo durante la vita del processo avvengono le seguenti modifiche: 
+- In fase di creazione viene settato a NULL
+- Quando il processo di trova in coda sul semaforo e viene chiamata una Verhogen (sul semaforo) il campo viene settato all'indirizzo del semaforo in questione
+- Quando il processo chiama una Verhogen il campo viene settato a NULL perchè il processo è uscito dalla sezione critica
+
+La chiamata della Verhogen sarà quindi effettuata dalla funzione outChildBlocked nel momento in cui è necessario rimuovere un processo dalle code dei semafori su cui è bloccato ed allo stesso tempo il campo p_cskey è diverso da NULL. La funzione outChildBlocked ha il ruolo di rimuovere solamente i processi nella coda di un semaforo, non quelli in sezione critica, che sono già stati rimossi dalla coda. Per ovviare a questo problema il campo p_semkey che indica su quale semaforo il processo è bloccato viene settato a NULL solamente quando il processo esce dalla sezione critica, quindi quando chiama una Verhogen. 
+
+
