@@ -18,6 +18,24 @@
 
 typedef unsigned int memaddr;
 
+/*Struttura per memorizzare le aree degli handler speciali*/
+typedef struct excarea_t{
+    /*aree di memoria per newarea oldarea*/
+    state_t* newarea;
+    state_t* oldarea;
+    int used;   /*1 quando l'area è inizializzata*/
+} excarea_t;
+
+/*Struttura per raggruppare i semafori dei device*/
+typedef struct devsem_t{
+    int disksem[N_DEV_PER_IL];
+    int tapesem[N_DEV_PER_IL];
+    int netsem[N_DEV_PER_IL];
+    int printsem[N_DEV_PER_IL];
+    int termrecvsem[N_DEV_PER_IL];
+    int termtransmsem[N_DEV_PER_IL];
+} devsem_t;
+
 /* Process Control Block (PCB) data structure */
 typedef struct pcb_t {
     /*process queue fields */
@@ -37,9 +55,15 @@ typedef struct pcb_t {
     /* key of the semaphore on which the process is eventually blocked */
     int *p_semkey;
 
+    /* key of the semaphore of the critical section the process is*/
+    int *p_cskey;
+
     unsigned int start_user_timer, total_user_timer;
     unsigned int start_kernel_timer, total_kernel_timer;
     unsigned int wallclock_timer;
+
+    /*aree per memorizzare gli handler speciali*/
+    excarea_t excareas[3];
 } pcb_t;
 
 
@@ -54,14 +78,5 @@ typedef struct semd_t {
     // Queue of PCBs blocked on the semaphore
     struct list_head s_procQ;
 } semd_t;
-
-typedef struct semdev {
-    semd_t disk[DEV_PER_INT];
-    semd_t tape[DEV_PER_INT];
-    semd_t network[DEV_PER_INT];
-    semd_t printer[DEV_PER_INT];
-    semd_t terminalR[DEV_PER_INT];
-    semd_t terminalT[DEV_PER_INT];
-} semdev;
 
 #endif

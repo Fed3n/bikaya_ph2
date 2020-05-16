@@ -35,14 +35,7 @@ void syscall_handler(){
 		unsigned int arg1 = p->ST_A1;
 		unsigned int arg2 = p->ST_A2;
 		unsigned int arg3 = p->ST_A3;
-		
-/*		int arg1 = 0;
 
-		int* prov = (int*)p->ST_A1;
-		if ((*prov) == 0) termprint("ella");
-		if ((*prov) >= 2) termprint("elli");
-		if ((*prov) <= 200000000) termprint("elle");
-*/
 		switch (sysNum){
 			case CREATE_PROC:
 				retvalue = createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
@@ -55,9 +48,14 @@ void syscall_handler(){
 			case PASSEREN:
 				passeren((int*)arg1);
 			break;
+			case IO_COMMAND:
+				do_IO((unsigned int)arg1,(unsigned int*)arg2, (int)arg3);
+			break;
+			case SPEC_PASSUP:
+				spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
+				break;
 			default:
-				termprint("Syscall not yet managed.\n");
-				HALT();
+				special_handler(0,p,arg1,arg2,arg3);
 		}
 	}
 	else{
@@ -79,6 +77,7 @@ void interrupt_handler(){
 		ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
 	}
 	int line = 0;
+	int i;
 	while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) line++;
 	/*Siccome il PLT non e’ presente su uARM, e’
 	conveniente sfruttare l’interval timer su
@@ -86,20 +85,85 @@ void interrupt_handler(){
 	switch(line){
 		case PROCESSOR_LOCAL_TIMER:
 			interrupt12();
+			break;
 		case BUS_INTERVAL_TIMER:
 			interrupt12();
+			break;
+		case DISK_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(DISK_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case TYPE_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TYPE_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case NETWORK_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(NETWORK_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case PRINTER_DEVICES:
+			/*controllo ogni bit dell'interrupt line per vedere quali
+			device hanno un interrupt in sospeso*/
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(PRINTER_DEVICES);
+				if(*bit_vec & (1<<i))
+					devInterrupt(line,i);
+			}
+			break;
+		case TERMINAL_DEVICES:
+			for(i = 0; i < DEV_PER_INT; i++){
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
+				if(*bit_vec & (1<<i)){
+					termInterrupt(i);
+				}
+			}
+			break;
 		default:
+			HALT();
 			termprint("Interrupt line not yet managed.\n");
 			HALT();
 	}
 }
 
 void tlb_handler(){
-	termprint("TLB!");
-	HALT();
+	state_t* p = (state_t *)TLB_OLDAREA;
+	special_handler(1,p,0,0,0);
 }
 
 void trap_handler(){
-	termprint("TRAP!");
-	HALT();
+	//termprint("Trap handler called\n");
+	state_t* p = (state_t *)PGMTRAP_OLDAREA;
+	special_handler(2,p,0,0,0);
+}
+
+void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3){
+	//termprint("Entering special handler...\n");
+	if (currentProc->excareas[type].used == 1){
+		/*passo i parametri in caso sia una syscall*/
+		if(type == 0){
+			/*idk actually?*/
+		}
+		ownmemcpy(oldarea, currentProc->excareas[type].oldarea, sizeof(state_t));
+		state_t* p = (currentProc->excareas[type].newarea);
+		LDST(TO_LOAD(p));
+	}
+	else{
+		//termprint("Tipo speciale non definito.\n");
+		SYSCALL(3,0,0,0);
+	}
 }
