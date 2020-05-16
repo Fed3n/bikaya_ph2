@@ -39,6 +39,7 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
 	proc->original_priority = priority;
 	proc->priority = priority;
+	proc->wallclock_timer = getTODLO();
 	insertChild(currentProc,proc);
 	insertReadyQueue(proc);
 	if (cpid != NULL)

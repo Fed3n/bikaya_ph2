@@ -1,8 +1,16 @@
 #ifndef CONST_BIKAYA_INCLUDED
 #define CONST_BIKAYA_INCLUDED
 
-#ifdef TARGET_UMPS
+#define ST_READY         1
+#define ST_BUSY          3
+#define ST_RECEIVED   	 5
+#define ST_TRANSMITTED   5
+#define CMD_ACK          1
+#define CMD_TRANSMIT     2
+#define CHAR_OFFSET      8
+#define TERM_STATUS_MASK 0xFF
 
+#ifdef TARGET_UMPS
 
 /* Values for CP0 Cause.ExcCode */
 #define EXC_INTERRUPT      0

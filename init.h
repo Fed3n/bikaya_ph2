@@ -6,6 +6,10 @@ void initExcarea(state_t* p, void* handler);
 
 void initProcess_KM(pcb_t* p, void* fun, int n);
 
+void initProcess_KM_noINT(pcb_t* p, void* fun, int n);
+
 void initAreas();
+
+void initStructs();
 
 #endif
