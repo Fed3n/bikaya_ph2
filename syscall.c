@@ -23,7 +23,7 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	user_timer_update(currentProc);
 	if(user != NULL) *user = currentProc->total_user_timer;
 	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
-	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
+	if(wallclock != NULL) *wallclock = (getTODLO() - currentProc->wallclock_timer);
 }
 
 //crea un nuovo processo

@@ -54,6 +54,8 @@ pcb_t *allocPcb(void) {
 			ownmemset(&temp->excareas[i], 0, sizeof(excarea_t));
 		}
 
+		temp->wallclock_timer = getTODLO();
+
 		/*Ritorno il puntatore temporaneo per terminare la funzione*/
 		return temp;
 	}
