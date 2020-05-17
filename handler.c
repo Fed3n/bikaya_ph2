@@ -38,20 +38,24 @@ void syscall_handler(){
 		unsigned int arg3 = p->ST_A3;
 
 		switch (sysNum){
+			case GET_CPU_TIME:
+				get_cpu_time((unsigned int*)arg1,(unsigned int*)arg2,(unsigned int*)arg3);
+				break;
 			case CREATE_PROC:
 				retvalue = createProcess((state_t*)arg1,(int)arg2,(void**)arg3);
+				break;
 			case TERMINATE_PROC:
 				retvalue = terminateProcess((int*)arg1);
-			break;
+				break;
 			case VERHOGEN:
-				verhogen((int*)arg1);			
-			break;
+				verhogen((int*)arg1);		
+				break;
 			case PASSEREN:
 				passeren((int*)arg1);
-			break;
+				break;
 			case IO_COMMAND:
 				do_IO((unsigned int)arg1,(unsigned int*)arg2, (int)arg3);
-			break;
+				break;
 			case SPEC_PASSUP:
 				spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
 				break;

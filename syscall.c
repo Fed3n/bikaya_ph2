@@ -2,10 +2,6 @@
 #include "scheduler.h"
 #include "auxfun.h"
 
-//definizione per i test
-
-#define VERHOGEN 4 
-
 #ifdef TARGET_UMPS
 extern void termprint(char *str);
 #endif
@@ -27,8 +23,7 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	user_timer_update(currentProc);
 	if(user != NULL) *user = currentProc->total_user_timer;
 	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
-	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
-	schedule();
+	if(wallclock != NULL) *wallclock = (getTODLO() - currentProc->wallclock_timer);
 }
 
 //crea un nuovo processo
@@ -70,11 +65,14 @@ void verhogen(int *semaddr){
 		p->p_cskey = semaddr;
 		//aggiorno il campo p_cskey per indicare che il processo corrente (che ha chiamato la Verhogen) 
 		//è uscito dalla sezione critica del semaforo in questione
-		currentProc->p_cskey = NULL;
-		currentProc->p_semkey = NULL;
+		if (currentProc != NULL){
+			currentProc->p_cskey = NULL;
+			currentProc->p_semkey = NULL;
+		}
 		insertReadyQueue(p);
-	} else
+	} else{
 		(*semaddr)++;
+	}
 }	
 
 //richiesta di un semaforo
@@ -82,8 +80,10 @@ void passeren(int *semaddr){
 	if (*semaddr <= 0){		
 		if (insertBlocked(semaddr,currentProc))
 			termprint("ERROR: no more semaphores available!");
-	}else
+		currentProc = NULL;
+	} else{
 		(*semaddr)--;
+	}
 }
 
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
