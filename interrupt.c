@@ -50,4 +50,5 @@ void termInterrupt(int dev){
 	p->p_s.ST_RET = return_value;
 
 	verhogen(&devsem[i]);
+	schedule();
 }

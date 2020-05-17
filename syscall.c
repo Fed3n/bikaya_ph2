@@ -24,7 +24,6 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	if(user != NULL) *user = currentProc->total_user_timer;
 	if(kernel != NULL) *kernel = currentProc->total_kernel_timer;
 	if(wallclock != NULL) *wallclock = currentProc->wallclock_timer;
-	schedule();
 }
 
 //crea un nuovo processo
@@ -66,11 +65,14 @@ void verhogen(int *semaddr){
 		p->p_cskey = semaddr;
 		//aggiorno il campo p_cskey per indicare che il processo corrente (che ha chiamato la Verhogen) 
 		//è uscito dalla sezione critica del semaforo in questione
-		currentProc->p_cskey = NULL;
-		currentProc->p_semkey = NULL;
+		if (currentProc != NULL){
+			currentProc->p_cskey = NULL;
+			currentProc->p_semkey = NULL;
+		}
 		insertReadyQueue(p);
-	} else
+	} else{
 		(*semaddr)++;
+	}
 }	
 
 //richiesta di un semaforo
@@ -79,8 +81,9 @@ void passeren(int *semaddr){
 		if (insertBlocked(semaddr,currentProc))
 			termprint("ERROR: no more semaphores available!");
 		currentProc = NULL;
-	}else{
+	} else{
 		(*semaddr)--;
+	}
 }
 
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
