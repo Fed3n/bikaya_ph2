@@ -2,8 +2,6 @@
 #include "scheduler.h"
 #include "auxfun.h"
 
-//definizione per i test
-
 #ifdef TARGET_UMPS
 extern void termprint(char *str);
 #endif
@@ -30,59 +28,59 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 }
 
 //crea un nuovo processo
-void/*int*/ createProcess(state_t* statep, int priority, void** cpid){
+int createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
-	/*if (proc == NULL)
-		return -1;*/
+	if (proc == NULL)
+		return -1;
 	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
 	proc->original_priority = priority;
 	proc->priority = priority;
-
 	proc->wallclock_timer = getTODLO();
-	
 	insertChild(currentProc,proc);
 	insertReadyQueue(proc);
 	if (cpid != NULL)
 		*cpid = &proc;
-	//rerurn 0;
-	schedule();
+	return 0;
 }
 
 //si occupa di terminare il processo corrente e di rimuovere tutti i figli dalla ready queue
-void terminateProcess(void* pid){
-	//if (pid    bisogna fare una funzione che mi dica se un pcb_t è allocato o no
-	if (pid == NULL) {
-		if (currentProc != NULL){
-			terminateProcess_exec(currentProc);
-			currentProc = NULL;
-		}
-	} else
+int terminateProcess(void* pid){
+	pid = (pcb_t*)pid;
+	if (pid == NULL){
+		pid = currentProc;
+		currentProc = NULL;
+	}
+	if (existingProcess(pid)){
+		outChildBlocked(pid); //gestisce la rimozione del processo e dei figli dai semafori su cui sono bloccati
 		terminateProcess_exec(pid);
-	//return 0;
-	schedule();
+		return 0;
+	} else
+		return -1;
 }
 
 //rilascio del semaforo
-void verhogen(int* semaddr){
+void verhogen(int *semaddr){
 	if (headBlocked(semaddr) != NULL){
 		pcb_t *p = removeBlocked(semaddr);
-		if (p != NULL)
-			insertReadyQueue(p);
+		//indico con il campo p_cskey che sono entrato in sezione critica del semaforo su cui ero bloccato
+		p->p_cskey = semaddr;
+		//aggiorno il campo p_cskey per indicare che il processo corrente (che ha chiamato la Verhogen) 
+		//è uscito dalla sezione critica del semaforo in questione
+		currentProc->p_cskey = NULL;
+		currentProc->p_semkey = NULL;
+		insertReadyQueue(p);
 	} else
 		(*semaddr)++;
-	schedule();
 }	
 
 //richiesta di un semaforo
-void passeren(int* semaddr){
-	if (*semaddr <= 0){
+void passeren(int *semaddr){
+	if (*semaddr <= 0){		
 		if (insertBlocked(semaddr,currentProc))
 			termprint("ERROR: no more semaphores available!");
 		currentProc = NULL;
 	}else{
 		(*semaddr)--;
-	}
-	schedule();
 }
 
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
@@ -160,6 +158,23 @@ void terminateProcess_exec(pcb_t *root){
 		if (child != NULL) 
 			terminateProcess_exec(child);
 	}		
+	if (root->p_cskey != NULL)  //chiamo una V se il processo da eliminare si trova in sezione critica
+			SYSCALL(VERHOGEN, (int)root->p_cskey, 0, 0);
 	outReadyQueue(root);
 	freePcb(root);
+}
+
+//ritorna 1 se il processo è un processo attualmente allocato 
+//ritorna 0 altrimenti
+int existingProcess(pcb_t* p){
+	int exists = 0;
+	if (p == currentProc)
+		exists = 1;
+	pcb_t *proc = NULL;
+	proc = outReadyQueue(p); //controlla se il processo è presente in readyQueue
+	if (proc != NULL)
+		exists = 1;
+	if (p->p_semkey != NULL) //controllo se il processo è bloccato su di un semaforo
+		exists = 1;
+	return exists;
 }
