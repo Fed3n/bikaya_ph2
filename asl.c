@@ -43,10 +43,8 @@ semd_t* getSemd(int *key)
 }
 
 /* aggiunge un PCB alla lista dei processi bloccati sul semaforo
-
 	key: chiave del semaforo
 	p: puntatore al PBC	
-
 	return: TRUE se il SEMD richiesto non è disponibile in quanto sono terminati i semafori disponibili
 */	
 
@@ -74,7 +72,6 @@ int insertBlocked(int *key, pcb_t *p)
 }
 
 /* rimuove il primo processo bloccato sulla coda dei processi del semaforo relativo
-
 	key: chiave del semaforo
 	
 	return: puntatore al PCB che è stato rimosso; ritorna NULL se il semaforo indicato non è presente nella ASL
@@ -104,9 +101,7 @@ pcb_t* removeBlocked(int *key)
 }
 
 /* rimuove il processo puntato da p dalla coda dei processi del semaforo su cui è bloccato
-
 	p: puntatore al processo da rimuovere
-
 	return: il puntatore al processo rimosso; NULL se il processo non è stato trovato nella coda dei processi bloccati
 		sul semaforo indicato nel campo p->semkey
 */
@@ -144,7 +139,6 @@ pcb_t* outBlocked(pcb_t *p)
 }
 
 /* restutuisce il puntatore al PCB in testa alla coda dei processi del semaforo identificato da key senza rimuovere il processo
-
 	key: chiave del semaforo
 	
 	return: processo in testa alla coda; NULL se il semaforo non è nella ASL e quindi non ha processi in coda
@@ -161,7 +155,6 @@ pcb_t* headBlocked(int *key)
 
 /* rimuove il processo puntato da p dalla coda dei processi del semaforo su cui è bloccato e fa lo stesso su tutti 
    i processi dell'albero radicato in p
-
 	p: puntatore al processo da rimuovere
 */
 
@@ -177,5 +170,3 @@ void outChildBlocked(pcb_t *p)
 		} while (pcb_son != NULL);
 	}
 }
-
-
