@@ -3,14 +3,6 @@
 #include "handler.h"
 #include "scheduler.h"
 
-#ifdef TARGET_UMPS
-extern void termprint(char *str);
-#endif
-
-#ifdef TARGET_UARM
-#define termprint(str) tprint(str);
-#endif
-
 /*Struttura contenente tutti i semafori dei device, inizializzati poi a 0*/
 int devsem[48];
 

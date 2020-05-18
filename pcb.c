@@ -166,13 +166,16 @@ Rimuove il primo figlio del pcb p e lo ritorna, se p non ha figli ritorna NULL.
 Se la lista dei figli di p non è vuota, rimuove il primo figlio p->child.next e lo ritorna.
 */
 pcb_t *removeChild(pcb_t *p){
-	if(emptyChild(p)) return NULL;
-	else{
-		/*Si memorizza il pcb_t da rimuovere*/
-		pcb_t *removed_p = container_of(p->p_child.next, pcb_t, p_sib);
-		list_del(p->p_child.next);
-		return removed_p;
+	if (p != NULL){
+		if(emptyChild(p)) return NULL;
+		else{
+			/*Si memorizza il pcb_t da rimuovere*/
+			pcb_t *removed_p = container_of(p->p_child.next, pcb_t, p_sib);
+			list_del(p->p_child.next);
+			return removed_p;
+		}
 	}
+	return NULL;
 }
 
 /*

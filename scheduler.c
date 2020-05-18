@@ -74,13 +74,6 @@ pcb_t* headReadyQueue(){
 
 /*Funzioni per manipolare le informazioni e gli stati relativi ai processi*/
 
-void terminateCurrentProc(){
-	if(currentProc != NULL){
-		freePcb(currentProc);
-		currentProc = NULL;
-	}
-}
-
 void updatePriority(){
 	if(currentProc != NULL){
 		/*reset alla priorità del processo in controllo*/

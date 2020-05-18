@@ -150,7 +150,6 @@ unsigned int set_sp_pc_status(state_t *s, state_t *copy, unsigned int pc) {
 #endif
 }
 
-
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
     unsigned int command;
@@ -168,7 +167,7 @@ void print(char *msg) {
         /* Wait for I/O completion (SYS8) */
         status = SYSCALL(WAITIO, command, (int)base, FALSE);
 
-        /*      PANIC(); */
+        /* PANIC(); */
 
         if ((status & TERMSTATMASK) != TRANSM)
             PANIC();
@@ -236,6 +235,8 @@ void test() {
     /* P1 blocks until p2 finishes and Vs endp2 */
     SYSCALL(PASSEREN, (int)&endp2, 0, 0); /* P(endp2)     */
     print("p1 knows p2 ended\n");
+
+	print("after p2\n");
 
     /* make sure we really blocked */
     if (p1p2synch == 0)
@@ -345,7 +346,7 @@ void p2() {
 
     p1p2synch = 1; /* p1 will check this */
 
-    SYSCALL(VERHOGEN, (int)&endp2, 0, 0); /* V(endp2)     */
+    SYSCALL(VERHOGEN, (int)&endp2, 0, 0); /* V(endp2) */
 
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* terminate p2 */
 
