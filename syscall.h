@@ -16,6 +16,8 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice);
 
 int spec_passup(int type, state_t* old, state_t* new);
 
+void get_pid_ppid(void** pid, void** ppid);
+
 void kernel_timer_update(pcb_t *currentProc);
 
 void user_timer_update(pcb_t *currentProc);

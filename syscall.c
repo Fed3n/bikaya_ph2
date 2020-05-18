@@ -38,7 +38,7 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	insertChild(currentProc,proc);
 	insertReadyQueue(proc);
 	if (cpid != NULL)
-		*cpid = &proc;
+		*cpid = proc;
 	return 0;
 }
 
@@ -79,7 +79,7 @@ void verhogen(int *semaddr){
 void passeren(int *semaddr){
 	if (*semaddr <= 0){		
 		if (insertBlocked(semaddr,currentProc))
-			termprint("ERROR: no more semaphores available!");
+			PANIC(); /*finiti i semafori*/
 		currentProc = NULL;
 	} else{
 		(*semaddr)--;
@@ -105,20 +105,27 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 }
 
 int spec_passup(int type, state_t* old, state_t* new){
-	termprint("sys7 called\n");
 	/*magari controllo che 0 <= type <= 2*/
 	excarea_t* p = &(currentProc->excareas[type]);
 	/*se used è marcato termino chiamante*/
-	if(p->used == 1)
+	if(p->used == 1){
 		terminateProcess(NULL);
+		return -1;
+	}
 	/*altrimenti inizializzo le aree del type corrispondente e marco used*/
 	else{
 		p->used = 1;
 		p->newarea = new;
 		p->oldarea = old;
 	}
-	termprint("Calling schedule after spec_passup...\n");
-	schedule();
+	return 0;
+}
+
+void get_pid_ppid(void** pid, void** ppid){
+	if(pid != NULL)
+		*pid = currentProc;
+	if(ppid != NULL)
+		*ppid = currentProc->p_parent;
 }
 
 /*************************************/

@@ -49,7 +49,10 @@ void syscall_handler(){
 				do_IO((unsigned int)arg1,(unsigned int*)arg2, (int)arg3);
 				break;
 			case SPEC_PASSUP:
-				spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
+				retvalue = spec_passup((int)arg1,(state_t*)arg2,(state_t*)arg3);
+				break;
+			case GET_PID:
+				get_pid_ppid((void**)arg1,(void**)arg2);
 				break;
 			default:
 				special_handler(0,p,arg1,arg2,arg3);
