@@ -299,6 +299,7 @@ void p2() {
     cpu_t wallclock_t1, wallclock_t2; /* wallclock time used       */
 
     /* startp2 is initialized to 0. p1 Vs it then waits for p2 termination */
+
     SYSCALL(PASSEREN, (int)&startp2, 0, 0); /* P(startp2)   */
 
     print("p2 starts\n");

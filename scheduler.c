@@ -1,5 +1,6 @@
 #include "pcb.h"
 #include "scheduler.h"
+#include "syscall.h"
 #include "auxfun.h"
 
 /*la testa della ready queue è hidden e vi ci si interfaccia tramite le funzioni dello scheduler*/

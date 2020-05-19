@@ -13,7 +13,6 @@ void interrupt12(){
 	/*Si setta nuovamente il timer*/
 	setTIMER(ACK_SLICE);
 	/*Si richiama nuovamente lo scheduler*/
-	schedule();
 }
 
 void devInterrupt(int line, int dev){
@@ -42,5 +41,4 @@ void termInterrupt(int dev){
 	p->p_s.ST_RET = return_value;
 
 	verhogen(&devsem[i]);
-	schedule();
 }

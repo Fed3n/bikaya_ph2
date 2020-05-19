@@ -7,7 +7,6 @@
 #include "init.h"
 
 extern void test();
-extern void print();
 
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
 int main(){
@@ -29,5 +28,5 @@ int main(){
 
 	schedule();
 	
-	HALT();
+	return 0;
 }

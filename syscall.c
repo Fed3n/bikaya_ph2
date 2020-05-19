@@ -2,16 +2,9 @@
 #include "scheduler.h"
 #include "auxfun.h"
 
-#ifdef TARGET_UMPS
-extern void termprint(char *str);
-#endif
-
-#ifdef TARGET_UARM
-#define termprint(str) tprint(str);
-#endif
-
 extern pcb_t* currentProc;
 extern int devsem[48];
+extern int startp2;
 
 /*************************************/
 /* SYSTEM CALL                       */
@@ -31,6 +24,10 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
 	if (proc == NULL)
 		return -1;
+	/*se siamo su umps da manuale inizializzo il reg_t9*/
+	#ifdef TARGET_UMPS
+	statep->reg_t9 = statep->ST_PC;
+	#endif
 	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
 	proc->original_priority = priority;
 	proc->priority = priority;
@@ -87,7 +84,6 @@ void passeren(int *semaddr){
 }
 
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
-	//termprint("do_IO called...\n");
 	devreg_t* devp = (devreg_t*)reg;
 
 	int i = DEVSEM_N((unsigned int)reg);
@@ -98,7 +94,6 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 		i += N_DEV_PER_IL;
 		devp->term.transm_command = command;
 	}
-	//SYSCALL(PASSEREN,(int)&devsem[i],0,0);
 	passeren(&devsem[i]);
 	/*non dovrebbe eseguire oltre ma per evitare di bloccare il sistema nel caso...*/
 	schedule();

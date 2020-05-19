@@ -84,10 +84,8 @@ void interrupt_handler(){
 	switch(line){
 		case PROCESSOR_LOCAL_TIMER:
 			interrupt12();
-			break;
 		case BUS_INTERVAL_TIMER:
 			interrupt12();
-			break;
 		case DISK_DEVICES:
 			/*controllo ogni bit dell'interrupt line per vedere quali
 			device hanno un interrupt in sospeso*/
@@ -96,7 +94,6 @@ void interrupt_handler(){
 				if(*bit_vec & (1<<i))
 					devInterrupt(line,i);
 			}
-			break;
 		case TYPE_DEVICES:
 			/*controllo ogni bit dell'interrupt line per vedere quali
 			device hanno un interrupt in sospeso*/
@@ -105,7 +102,6 @@ void interrupt_handler(){
 				if(*bit_vec & (1<<i))
 					devInterrupt(line,i);
 			}
-			break;
 		case NETWORK_DEVICES:
 			/*controllo ogni bit dell'interrupt line per vedere quali
 			device hanno un interrupt in sospeso*/
@@ -114,7 +110,6 @@ void interrupt_handler(){
 				if(*bit_vec & (1<<i))
 					devInterrupt(line,i);
 			}
-			break;
 		case PRINTER_DEVICES:
 			/*controllo ogni bit dell'interrupt line per vedere quali
 			device hanno un interrupt in sospeso*/
@@ -123,7 +118,6 @@ void interrupt_handler(){
 				if(*bit_vec & (1<<i))
 					devInterrupt(line,i);
 			}
-			break;
 		case TERMINAL_DEVICES:
 			for(i = 0; i < DEV_PER_INT; i++){
 				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
@@ -131,10 +125,8 @@ void interrupt_handler(){
 					termInterrupt(i);
 				}
 			}
-			break;
-		default:
-			HALT();
 	}
+	schedule();
 }
 
 void tlb_handler(){

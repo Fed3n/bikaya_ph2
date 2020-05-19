@@ -65,10 +65,10 @@
 **************************************************************/
 #ifdef TARGET_UMPS
 /*interrupt disabled, kernel mode, local timer on, virtual memory off*/
-#define STATUS_ALL_INT_DISABLE_KM_LT(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_TE))
+#define STATUS_ALL_INT_DISABLE_KM_LT(status) ((status) | (STATUS_IEp) | (STATUS_TE))
 /*interrupt disabled eccetto i timer, kernel mode, virtual memory off*/
-#define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
-#define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
 #define STATUS_ENABLE_ALL_INT(status) ((status) | (0xFF << 8))
 
 /*macro da passare a LDST*/
