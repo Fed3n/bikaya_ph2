@@ -3,9 +3,11 @@
 #include "handler.h"
 #include "scheduler.h"
 
-/*Struttura contenente tutti i semafori dei device, inizializzati poi a 0*/
+/*Vettore contenente tutti i semafori dei device, inizializzati poi a 0*/
 int devsem[TOT_DEV_N];
+/*Vettore contenente tutti i semafori di attesa per eseguire un IO, inizializzati poi a 1*/
 int waitIOsem[TOT_DEV_N];
+
 extern pcb_t* currentProc;
 
 //Aggiorno le priority, reinserisco il processo in stato ready e ripasso il controllo allo scheduler

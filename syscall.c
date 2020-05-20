@@ -84,15 +84,22 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 
 	int i = DEVSEM_N((unsigned int)reg);
 
+	/*se non si tratta di un terminale*/
+	if(i < (TOT_DEV_N- 2*N_DEV_PER_IL))
+		subdevice = 1;
 	/****questa parte purtroppo non viene testata nel test****/
 	/*Controllo che il device non sia in uso*/
 	/*Se era in uso l'invio del comando verrà gestito dall'interrupt handler
 	al termine dell'operazione*/
 	currentProc->suspendedCmd = command;
+	/*se deve essere sospeso non va oltre a questa P*/
 	passeren(&waitIOsem[i]);
 	/*********************************************************/
 
+	/*controllo quale subdevice è nel caso di un terminale*/
 	if(subdevice)
+		/*se è un device generico devp è una union, manderò il comando
+		al campo corretto in ogni caso*/
 		devp->term.recv_command = command;
 	else{
 		/*se devo trasmettere allora scalo di 8 semafori per quello giusto*/
@@ -111,7 +118,6 @@ int spec_passup(int type, state_t* old, state_t* new){
 	/*se used è marcato termino chiamante*/
 	if(p->used == 1){
 		terminateProcess(NULL);
-		return -1;
 	}
 	/*altrimenti inizializzo le aree del type corrispondente e marco used*/
 	else{

@@ -12,12 +12,17 @@
 #define SPEC_PASSUP 7
 #define GET_PID 8
 
+#define TYPE_SYS 0
+#define TYPE_TLB 1
+#define TYPE_PGMTRAP 2
+
 extern pcb_t* currentProc;
 
 void syscall_handler(){
 	kernel_timer_update(currentProc);
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
+	/*aggiornamento PC*/
 	p->ST_PC = p->ST_PC + SYSBP_PC*WORDSIZE;
 	ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
 	int retvalue = 1; //i valori possibili sono 0 e -1, capisco così se è stato modificato
@@ -55,7 +60,7 @@ void syscall_handler(){
 				get_pid_ppid((void**)arg1,(void**)arg2);
 				break;
 			default:
-				special_handler(0,p,arg1,arg2,arg3);
+				special_handler(TYPE_SYS,p);
 		}
 	}
 	else
@@ -77,7 +82,7 @@ void interrupt_handler(){
 	}
 	int line;
 	int i;
-	/*while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) {*/
+	/*while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) line++;*/
 	for(line=0; line < 8; line++){
 		if(INTERRUPT_LINE_CAUSE(getCAUSE(), line)){
 			switch(line){
@@ -143,25 +148,22 @@ void interrupt_handler(){
 }
 
 void tlb_handler(){
-	state_t* p = (state_t *)TLB_OLDAREA;
-	special_handler(1,p,0,0,0);
+	state_t* old = (state_t *)TLB_OLDAREA;
+	special_handler(TYPE_TLB,old);
 }
 
 void trap_handler(){
-	state_t* p = (state_t *)PGMTRAP_OLDAREA;
-	special_handler(2,p,0,0,0);
+	state_t* old = (state_t *)PGMTRAP_OLDAREA;
+	special_handler(TYPE_PGMTRAP,old);
 }
 
-void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int arg2, unsigned int arg3){
+void special_handler(int type, state_t* oldarea){
 	if (currentProc->excareas[type].used == 1){
-		/*passo i parametri in caso sia una syscall*/
-		if(type == 0){
-			/*idk actually?*/
-		}
 		ownmemcpy(oldarea, currentProc->excareas[type].oldarea, sizeof(state_t));
 		state_t* p = currentProc->excareas[type].newarea;
 		LDST(TO_LOAD(p));
 	}
 	else
-		SYSCALL(3,0,0,0);
+		/*Se l'eccezione speciale non è gestita, terminazione*/
+		SYSCALL(TERMINATE_PROC,0,0,0);
 }
