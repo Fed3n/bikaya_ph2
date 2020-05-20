@@ -3,16 +3,15 @@
 #include "handler.h"
 #include "auxfun.h"
 
-extern int devsem[48];
+extern int devsem[TOT_DEV_N];
+extern int waitIOsem[TOT_DEV_N];
 
 #ifdef TARGET_UMPS
 /*inizializza l'exception area in kernel mode, interrupt disabilitati*/
 void initExcarea(state_t* p, void* handler){
 	ownmemset(p, 0, sizeof(state_t));
 	p->reg_sp = RAMTOP;
-	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
 	p->pc_epc = (memaddr)handler;
-	p->reg_t9 = (memaddr)handler;
 	p->status = STATUS_ALL_INT_DISABLE_KM_LT(p->status);
 }
 
@@ -20,9 +19,7 @@ void initExcarea(state_t* p, void* handler){
 /*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
 void initProcess_KM(pcb_t* p, void* fun, int n){
 	p->p_s.reg_sp = (RAMTOP-(RAM_FRAMESIZE*n));
-	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
 	p->p_s.pc_epc = (memaddr)fun;
-	p->p_s.reg_t9 = (memaddr)fun;
 	p->p_s.status = STATUS_ALL_INT_ENABLE_KM(p->p_s.status);
 	p->original_priority = n;
 	p->priority = n;
@@ -32,9 +29,7 @@ void initProcess_KM(pcb_t* p, void* fun, int n){
 /*n = numero del processo, che influenza la priorità e dove gli viene assegnato spazio in ram*/
 void initProcess_KM_noINT(pcb_t* p, void* fun, int n){
 	p->p_s.reg_sp = (RAMTOP-(RAM_FRAMESIZE*n));
-	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
 	p->p_s.pc_epc = (memaddr)fun;
-	p->p_s.reg_t9 = (memaddr)fun;
 	p->p_s.status = STATUS_ALL_INT_ENABLE_KM_LT(p->p_s.status);
 	p->original_priority = n;
 	p->priority = n;
@@ -93,6 +88,9 @@ initExcarea((state_t *)PGMTRAP_NEWAREA, trap_handler);
 initExcarea((state_t *)SYSBK_NEWAREA, syscall_handler);
 }
 
+/*Inizializza strutture ausiliarie della fase2, ma in realtà ci sono solo i
+vettori dei semafori dei device e di attesaIO che sono inizializzati a 0 e 1*/
 void initStructs(){
-	ownmemset(&devsem,0,48*sizeof(int));
+	ownmemset(&devsem,0,TOT_DEV_N*sizeof(int));
+	ownmemset(&waitIOsem,1,TOT_DEV_N*sizeof(int));
 }

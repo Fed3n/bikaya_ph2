@@ -47,6 +47,8 @@
 
 #define TIME_SLICE 3000
 #define ACK_SLICE TIME_SLICE*(*(memaddr *)BUS_REG_TIME_SCALE)
+/*numero totale di devices, 5*8 + 8 (il terminale ha sia recv che transm)*/
+#define TOT_DEV_N (N_EXT_IL*N_DEV_PER_IL + N_DEV_PER_IL)
 /*ritorna il numero di semaforo della struttura devsem_t corrispondente al device*/
 #define DEVSEM_N(reg) (((reg)-DEV_REG_START)/(DEV_REG_SIZE))
 #define INTER_PROCESSOR_INTERRUPT 0

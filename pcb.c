@@ -41,18 +41,13 @@ pcb_t *allocPcb(void) {
 		/*Si rimuove l'indirizzo del PCB rimosso dalla lista che lo contiene*/
 		list_del(&(temp->p_next));
 
-		/*Si inizializzano tutti i campi a Null*/
+		/*Si inizializzano tutti i campi a NULL/0*/
+		ownmemset(temp, 0, sizeof(pcb_t));
+		
+		/*Eccetto alcuni che vanno inizializzati più specificamente*/
 		INIT_LIST_HEAD(&(temp->p_next));
-		temp->p_parent = NULL;
 		INIT_LIST_HEAD(&(temp->p_child));
 		INIT_LIST_HEAD(&(temp->p_sib));
-		temp->priority = 0;
-		temp->p_semkey = NULL;
-		ownmemset(&temp->p_s, 0, sizeof(state_t));
-		int i;
-		for(i = 0; i < 3; i++){
-			ownmemset(&temp->excareas[i], 0, sizeof(excarea_t));
-		}
 
 		temp->wallclock_timer = getTODLO();
 

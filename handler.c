@@ -75,56 +75,69 @@ void interrupt_handler(){
 		p->ST_PC = p->ST_PC + INT_PC*WORDSIZE;
 		ownmemcpy(p, &(currentProc->p_s), sizeof(state_t));
 	}
-	int line = 0;
+	int line;
 	int i;
-	while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) line++;
-	/*Siccome il PLT non e’ presente su uARM, e’
-	conveniente sfruttare l’interval timer su
-	entrambe le piattaforme*/
-	switch(line){
-		case PROCESSOR_LOCAL_TIMER:
-			interrupt12();
-		case BUS_INTERVAL_TIMER:
-			interrupt12();
-		case DISK_DEVICES:
-			/*controllo ogni bit dell'interrupt line per vedere quali
-			device hanno un interrupt in sospeso*/
-			for(i = 0; i < DEV_PER_INT; i++){
-				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(DISK_DEVICES);
-				if(*bit_vec & (1<<i))
-					devInterrupt(line,i);
+	/*while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) {*/
+	for(line=0; line < 8; line++){
+		if(INTERRUPT_LINE_CAUSE(getCAUSE(), line)){
+			switch(line){
+				/*Siccome il PLT non e’ presente su uARM, e’
+				conveniente sfruttare l’interval timer su
+				entrambe le piattaforme*/
+				case PROCESSOR_LOCAL_TIMER:
+					timerInterrupt();
+					break;
+				case BUS_INTERVAL_TIMER:
+					timerInterrupt();
+					break;
+				case DISK_DEVICES:
+					/*controllo ogni bit dell'interrupt line per vedere quali
+					device hanno un interrupt in sospeso*/
+					for(i = 0; i < DEV_PER_INT; i++){
+						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(DISK_DEVICES);
+						if(*bit_vec & (1<<i))
+							devInterrupt(line,i);
+					}
+					break;
+				case TYPE_DEVICES:
+					/*controllo ogni bit dell'interrupt line per vedere quali
+					device hanno un interrupt in sospeso*/
+					for(i = 0; i < DEV_PER_INT; i++){
+						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TYPE_DEVICES);
+						if(*bit_vec & (1<<i))
+							devInterrupt(line,i);
+					}
+					break;
+				case NETWORK_DEVICES:
+					/*controllo ogni bit dell'interrupt line per vedere quali
+					device hanno un interrupt in sospeso*/
+					for(i = 0; i < DEV_PER_INT; i++){
+						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(NETWORK_DEVICES);
+						if(*bit_vec & (1<<i))
+							devInterrupt(line,i);
+					}
+					break;
+				case PRINTER_DEVICES:
+					/*controllo ogni bit dell'interrupt line per vedere quali
+					device hanno un interrupt in sospeso*/
+					for(i = 0; i < DEV_PER_INT; i++){
+						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(PRINTER_DEVICES);
+						if(*bit_vec & (1<<i))
+							devInterrupt(line,i);
+					}
+					break;
+				case TERMINAL_DEVICES:
+					/*controllo ogni bit dell'interrupt line per vedere quali
+					device hanno un interrupt in sospeso*/
+					for(i = 0; i < DEV_PER_INT; i++){
+						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
+						if(*bit_vec & (1<<i)){
+							termInterrupt(i);
+						}
+					}
+					break;
 			}
-		case TYPE_DEVICES:
-			/*controllo ogni bit dell'interrupt line per vedere quali
-			device hanno un interrupt in sospeso*/
-			for(i = 0; i < DEV_PER_INT; i++){
-				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TYPE_DEVICES);
-				if(*bit_vec & (1<<i))
-					devInterrupt(line,i);
-			}
-		case NETWORK_DEVICES:
-			/*controllo ogni bit dell'interrupt line per vedere quali
-			device hanno un interrupt in sospeso*/
-			for(i = 0; i < DEV_PER_INT; i++){
-				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(NETWORK_DEVICES);
-				if(*bit_vec & (1<<i))
-					devInterrupt(line,i);
-			}
-		case PRINTER_DEVICES:
-			/*controllo ogni bit dell'interrupt line per vedere quali
-			device hanno un interrupt in sospeso*/
-			for(i = 0; i < DEV_PER_INT; i++){
-				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(PRINTER_DEVICES);
-				if(*bit_vec & (1<<i))
-					devInterrupt(line,i);
-			}
-		case TERMINAL_DEVICES:
-			for(i = 0; i < DEV_PER_INT; i++){
-				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
-				if(*bit_vec & (1<<i)){
-					termInterrupt(i);
-				}
-			}
+		}
 	}
 	schedule();
 }
@@ -146,7 +159,7 @@ void special_handler(int type, state_t* oldarea, unsigned int arg1, unsigned int
 			/*idk actually?*/
 		}
 		ownmemcpy(oldarea, currentProc->excareas[type].oldarea, sizeof(state_t));
-		state_t* p = (currentProc->excareas[type].newarea);
+		state_t* p = currentProc->excareas[type].newarea;
 		LDST(TO_LOAD(p));
 	}
 	else

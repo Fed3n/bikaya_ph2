@@ -3,8 +3,8 @@
 #include "auxfun.h"
 
 extern pcb_t* currentProc;
-extern int devsem[48];
-extern int startp2;
+extern int devsem[TOT_DEV_N];
+extern int waitIOsem[TOT_DEV_N];
 
 /*************************************/
 /* SYSTEM CALL                       */
@@ -24,10 +24,6 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
 	if (proc == NULL)
 		return -1;
-	/*se siamo su umps da manuale inizializzo il reg_t9*/
-	#ifdef TARGET_UMPS
-	statep->reg_t9 = statep->ST_PC;
-	#endif
 	ownmemcpy(statep, &(proc->p_s), sizeof(state_t));
 	proc->original_priority = priority;
 	proc->priority = priority;
@@ -87,6 +83,15 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 	devreg_t* devp = (devreg_t*)reg;
 
 	int i = DEVSEM_N((unsigned int)reg);
+
+	/****questa parte purtroppo non viene testata nel test****/
+	/*Controllo che il device non sia in uso*/
+	/*Se era in uso l'invio del comando verrà gestito dall'interrupt handler
+	al termine dell'operazione*/
+	currentProc->suspendedCmd = command;
+	passeren(&waitIOsem[i]);
+	/*********************************************************/
+
 	if(subdevice)
 		devp->term.recv_command = command;
 	else{
@@ -95,12 +100,13 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 		devp->term.transm_command = command;
 	}
 	passeren(&devsem[i]);
-	/*non dovrebbe eseguire oltre ma per evitare di bloccare il sistema nel caso...*/
-	schedule();
 }
 
 int spec_passup(int type, state_t* old, state_t* new){
-	/*magari controllo che 0 <= type <= 2*/
+	if(type < 0 || type > 2){
+		/*tipo non ammesso*/
+		return -1;
+	}
 	excarea_t* p = &(currentProc->excareas[type]);
 	/*se used è marcato termino chiamante*/
 	if(p->used == 1){
@@ -110,8 +116,8 @@ int spec_passup(int type, state_t* old, state_t* new){
 	/*altrimenti inizializzo le aree del type corrispondente e marco used*/
 	else{
 		p->used = 1;
-		p->newarea = new;
 		p->oldarea = old;
+		p->newarea = new;
 	}
 	return 0;
 }

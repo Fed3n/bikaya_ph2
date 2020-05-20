@@ -26,16 +26,6 @@ typedef struct excarea_t{
     int used;   /*1 quando l'area è inizializzata*/
 } excarea_t;
 
-/*Struttura per raggruppare i semafori dei device*/
-typedef struct devsem_t{
-    int disksem[N_DEV_PER_IL];
-    int tapesem[N_DEV_PER_IL];
-    int netsem[N_DEV_PER_IL];
-    int printsem[N_DEV_PER_IL];
-    int termrecvsem[N_DEV_PER_IL];
-    int termtransmsem[N_DEV_PER_IL];
-} devsem_t;
-
 /* Process Control Block (PCB) data structure */
 typedef struct pcb_t {
     /*process queue fields */
@@ -64,6 +54,9 @@ typedef struct pcb_t {
 
     /*aree per memorizzare gli handler speciali*/
     excarea_t excareas[3];
+
+    /*comando IO in sospeso*/
+    unsigned int suspendedCmd;
 } pcb_t;
 
 
