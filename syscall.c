@@ -19,7 +19,13 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	if(wallclock != NULL) *wallclock = (getTODLO() - currentProc->wallclock_timer);
 }
 
-//crea un nuovo processo
+/* Crea un nuovo processo
+	statep: state_t del processo da allocare
+	priority: priorità del processo
+	cpid: puntatore al cpid del processo allocato
+	
+	return : 0 se la funzione ha successo, -1 altrimenti
+*/
 int createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
 	if (proc == NULL)
@@ -35,22 +41,30 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	return 0;
 }
 
-//si occupa di terminare il processo corrente e di rimuovere tutti i figli dalla ready queue
+/*Termina il processo corrente e tutti i suoi figli
+	pid: processo da terminare 
+	->se pid == NULL termina il processo corrente
+	
+	return: ritorna 0 se la funzione ha successo, -1 altrimenti 	
+*/
 int terminateProcess(void* pid){
 	pid = (pcb_t*)pid;
+	//se il pid passato è NULL devo terminare il processo corrente
 	if (pid == NULL){
 		pid = currentProc;
 		currentProc = NULL;
 	}
 	if (existingProcess(pid)){
-		outChildBlocked(pid); //gestisce la rimozione del processo e dei figli dai semafori su cui sono bloccati
+		outChildBlocked(pid); //gestisce la rimozione del processo e dei suoi figli dai semafori nei quali sono bloccati
 		terminateProcess_exec(pid);
 		return 0;
 	} else
 		return -1;
 }
 
-//rilascio del semaforo
+/* Operazione di rilascio da un semaforo
+	semaddr: puntatore al valore del semaforo
+*/
 void verhogen(int *semaddr){
 	if (headBlocked(semaddr) != NULL){
 		pcb_t *p = removeBlocked(semaddr);
@@ -68,7 +82,9 @@ void verhogen(int *semaddr){
 	}
 }	
 
-//richiesta di un semaforo
+/* Operazione di richiesta di un semaforo
+	semaddr: puntatore al valore del semaforo
+*/
 void passeren(int *semaddr){
 	if (*semaddr <= 0){		
 		if (insertBlocked(semaddr,currentProc))
@@ -170,7 +186,10 @@ void user_timer_update(pcb_t *currentProc) {
 }
 
 
-//funzione ausiliaria utilizzata per poter realizzare la ricorsione
+/* Termina il processo passato come parametro e tutti i suoi figli rimuovendoli dalla readyqueue se presenti. Non gestisce i processi bloccati nelle code dei semafori.
+   Si occupa anche di chiamare una Verhogen prima della terminazione se il processo è in sezione critica
+	root: puntatore al pcb_t del processo da terminare
+*/
 void terminateProcess_exec(pcb_t *root){
 	while (!emptyChild(root)){
 		pcb_t *child = removeChild(root);
