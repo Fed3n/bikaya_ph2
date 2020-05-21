@@ -1,0 +1,21 @@
+DOCUMENTAZIONE ste
+
+SEMAFORI
+Abbiamo implementato i semafori assegnando all'intero il valore di "numero di processi che possono
+entrare in sezione critica", in altre parole nel momento in cui viene richiesta una P ma il processo non può continuare viene messo in coda, se invece il valore del semaforo è maggiore di uno viene decrementato ed il semaforo procede. Analogamente la V rimuove un processo bloccato in coda oppure aumenta il valore del semaforo se la coda è vuota. In questo modo il valore del semaforo sarà sempre positivo
+
+TERMINATE PROCESS
+La system call terminate process richiede la terminazione di un processo e di tutti i suoi figli. E' inoltre necessario ritornare True o False per comunicare il successo o insuccesso della funzione.
+Inizialmente viene richiamata la funzione existingProcess che determina se il pid passato come parametro si riferisce ad un pcb_t valido (controlla se è il current proc, se è in ready queue o se si trova bloccato su un semaforo).
+La funzione outChildBlocked si occupa di rimuovere il processo corrente e tutti i suoi figli dai semafori nei quali sono bloccati. Successivamente viene chiamata la terminateProcess_exec che rimuove il processo passato come parametro e tutti i suoi figli liberando le strutture impegnate.
+
+In fase di terminazione di un processo, se questo si trova in sezione critica, è necessario richiamare una V al momento della terminazione, se ciò non avviene verrà alterato il funzionamento del semaforo. Se invece il processo si trova in coda al semaforo può essere terminato senza problemi.
+Per poter determinare se un processo di trova in sezione critica abbiamo aggiunto un campo p_cskey alla struttura pcb_t che indica il puntatore al valore del semaforo relativo alla sezione critica in cui si trova il processo (sarà NULL se il processo non è in sezione critica).
+La modifica del campo avviene nelle seguenti casistiche: 
+- In fase di creazione viene settato a NULL
+- Quando il processo si trova in cima alla coda di un semaforo e viene chiamata una Verhogen il processo entra in sezione critica ed il campo viene settato all'indirizzo del semaforo in questione
+- Quando il processo richiama una Passeren con successo entra in sezione critica ed il campo viene settato di conseguenza
+- Quando il processo chiama una Verhogen il campo viene settato a NULL perchè il processo è uscito dalla sezione critica
+
+
+
