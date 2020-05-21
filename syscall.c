@@ -75,17 +75,19 @@ void passeren(int *semaddr){
 			PANIC(); /*finiti i semafori*/
 		currentProc = NULL;
 	} else{
+		currentProc->p_cskey = semaddr;
 		(*semaddr)--;
 	}
 }
 
+/*richiesta di operazione di IO*/
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 	devreg_t* devp = (devreg_t*)reg;
 
 	int i = DEVSEM_N((unsigned int)reg);
 
-	/*se non si tratta di un terminale*/
-	if(i < (TOT_DEV_N- 2*N_DEV_PER_IL))
+	/*se non si tratta di un terminale, quindi se i < 32*/
+	if(i < (TOT_DEV_N - 2*N_DEV_PER_IL))
 		subdevice = 1;
 	/****questa parte purtroppo non viene testata nel test****/
 	/*Controllo che il device non sia in uso*/
@@ -184,14 +186,6 @@ void terminateProcess_exec(pcb_t *root){
 //ritorna 1 se il processo è un processo attualmente allocato 
 //ritorna 0 altrimenti
 int existingProcess(pcb_t* p){
-	int exists = 0;
-	if (p == currentProc)
-		exists = 1;
-	pcb_t *proc = NULL;
-	proc = outReadyQueue(p); //controlla se il processo è presente in readyQueue
-	if (proc != NULL)
-		exists = 1;
-	if (p->p_semkey != NULL) //controllo se il processo è bloccato su di un semaforo
-		exists = 1;
-	return exists;
+	/*ritorna TRUE se p è il currentProc, se è in ready queue (e lo rimuove) o se è bloccato in un semaforo*/
+	return ((p == currentProc) || outReadyQueue(p) || p->p_semkey);
 }

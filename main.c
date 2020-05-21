@@ -9,7 +9,7 @@
 extern void test();
 
 /*Inizializza le exception area, i PCB, mette i processi in ready queue, setta timer e poi chiama lo scheduler*/
-int main(){
+void main(){
 	initAreas();
 
 	initPcbs();
@@ -27,6 +27,4 @@ int main(){
 	setTIMER(ACK_SLICE);
 
 	schedule();
-	
-	return 0;
 }

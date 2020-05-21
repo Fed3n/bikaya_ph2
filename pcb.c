@@ -49,8 +49,6 @@ pcb_t *allocPcb(void) {
 		INIT_LIST_HEAD(&(temp->p_child));
 		INIT_LIST_HEAD(&(temp->p_sib));
 
-		temp->wallclock_timer = getTODLO();
-
 		/*Ritorno il puntatore temporaneo per terminare la funzione*/
 		return temp;
 	}
@@ -127,10 +125,10 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p) {
 			if( p == temp) {
 				/*la funzione termina solo se p é uguale a temp*/
 				list_del(&(p->p_next));
-				break;
+				return p;
 			}
 		}
-		return p;
+		return NULL;
 	}
 }
 

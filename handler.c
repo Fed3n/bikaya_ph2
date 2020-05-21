@@ -62,13 +62,13 @@ void syscall_handler(){
 			default:
 				special_handler(TYPE_SYS,p);
 		}
+		//valore di ritorno (se non è stato modificato)
+		if (retvalue != 1) 
+			p->ST_RET = retvalue;
+		schedule();
 	}
 	else
 		HALT();
-	//valore di ritorno (se non è stato modificato)
-	if (retvalue != 1) 
-		p->ST_RET = retvalue;
-	schedule();
 }
 
 void interrupt_handler(){
@@ -82,65 +82,32 @@ void interrupt_handler(){
 	}
 	int line;
 	int i;
-	/*while(line<=7 && !(INTERRUPT_LINE_CAUSE(getCAUSE(), line))) line++;*/
 	for(line=0; line < 8; line++){
 		if(INTERRUPT_LINE_CAUSE(getCAUSE(), line)){
-			switch(line){
-				/*Siccome il PLT non e’ presente su uARM, e’
-				conveniente sfruttare l’interval timer su
-				entrambe le piattaforme*/
-				case PROCESSOR_LOCAL_TIMER:
-					timerInterrupt();
-					break;
-				case BUS_INTERVAL_TIMER:
-					timerInterrupt();
-					break;
-				case DISK_DEVICES:
-					/*controllo ogni bit dell'interrupt line per vedere quali
-					device hanno un interrupt in sospeso*/
-					for(i = 0; i < DEV_PER_INT; i++){
-						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(DISK_DEVICES);
-						if(*bit_vec & (1<<i))
-							devInterrupt(line,i);
+			/*Siccome il PLT non e’ presente su uARM, e’
+            conveniente sfruttare l’interval timer su
+            entrambe le piattaforme*/
+			if(line == PROCESSOR_LOCAL_TIMER || line == BUS_INTERVAL_TIMER)
+				timerInterrupt();
+			else if(line == DISK_DEVICES || line == TYPE_DEVICES ||
+					line == NETWORK_DEVICES || line == PRINTER_DEVICES){
+				/*controllo ogni bit dell'interrupt line per vedere quali
+				device hanno un interrupt in sospeso*/
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(line);
+				for(i = 0; i < DEV_PER_INT; i++){
+					if(*bit_vec & (1<<i))
+						devInterrupt(line,i);
+				}
+			}
+			else if(line == TERMINAL_DEVICES){
+				/*controllo ogni bit dell'interrupt line per vedere quali
+				device hanno un interrupt in sospeso*/
+				unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
+				for(i = 0; i < DEV_PER_INT; i++){
+					if(*bit_vec & (1<<i)){
+						termInterrupt(i);
 					}
-					break;
-				case TYPE_DEVICES:
-					/*controllo ogni bit dell'interrupt line per vedere quali
-					device hanno un interrupt in sospeso*/
-					for(i = 0; i < DEV_PER_INT; i++){
-						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TYPE_DEVICES);
-						if(*bit_vec & (1<<i))
-							devInterrupt(line,i);
-					}
-					break;
-				case NETWORK_DEVICES:
-					/*controllo ogni bit dell'interrupt line per vedere quali
-					device hanno un interrupt in sospeso*/
-					for(i = 0; i < DEV_PER_INT; i++){
-						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(NETWORK_DEVICES);
-						if(*bit_vec & (1<<i))
-							devInterrupt(line,i);
-					}
-					break;
-				case PRINTER_DEVICES:
-					/*controllo ogni bit dell'interrupt line per vedere quali
-					device hanno un interrupt in sospeso*/
-					for(i = 0; i < DEV_PER_INT; i++){
-						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(PRINTER_DEVICES);
-						if(*bit_vec & (1<<i))
-							devInterrupt(line,i);
-					}
-					break;
-				case TERMINAL_DEVICES:
-					/*controllo ogni bit dell'interrupt line per vedere quali
-					device hanno un interrupt in sospeso*/
-					for(i = 0; i < DEV_PER_INT; i++){
-						unsigned int* bit_vec = (unsigned int*)INT_BIT_VEC(TERMINAL_DEVICES);
-						if(*bit_vec & (1<<i)){
-							termInterrupt(i);
-						}
-					}
-					break;
+				}
 			}
 		}
 	}
@@ -148,17 +115,20 @@ void interrupt_handler(){
 }
 
 void tlb_handler(){
+	kernel_timer_update(currentProc);
 	state_t* old = (state_t *)TLB_OLDAREA;
 	special_handler(TYPE_TLB,old);
 }
 
 void trap_handler(){
+	kernel_timer_update(currentProc);
 	state_t* old = (state_t *)PGMTRAP_OLDAREA;
 	special_handler(TYPE_PGMTRAP,old);
 }
 
 void special_handler(int type, state_t* oldarea){
 	if (currentProc->excareas[type].used == 1){
+		/*in caso di syscall con parametri, questi devono essere recuperati dall'oldarea*/
 		ownmemcpy(oldarea, currentProc->excareas[type].oldarea, sizeof(state_t));
 		state_t* p = currentProc->excareas[type].newarea;
 		LDST(TO_LOAD(p));

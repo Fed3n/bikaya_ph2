@@ -62,13 +62,14 @@ void schedule(){
 	if(emptyReadyQueue()){
 		setSTATUS(STATUS_ENABLE_ALL_INT(getSTATUS()));
 		WAIT();
-	}
+	}	
 
 	//Avvio il processo in user mode
-	user_timer_update(currentProc);	
+	user_timer_update(currentProc);
 
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();
+
 	setTIMER(ACK_SLICE);
 	state_t* p = &(currentProc->p_s);
 	LDST(TO_LOAD(p));
