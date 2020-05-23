@@ -19,12 +19,9 @@ void get_cpu_time(unsigned int *user, unsigned int *kernel, unsigned int *wallcl
 	if(wallclock != NULL) *wallclock = (getTODLO() - currentProc->wallclock_timer);
 }
 
-/* Crea un nuovo processo
-	statep: state_t del processo da allocare
-	priority: priorità del processo
-	cpid: puntatore al cpid del processo allocato
-	
-	return : 0 se la funzione ha successo, -1 altrimenti
+/* Crea un nuovo processo, il puntatore a pcb_t del processo appena creato
+	è puntato dal campo cpid passato come parametro.
+	ritorna 0 se la funzione ha successo, -1 altrimenti
 */
 int createProcess(state_t* statep, int priority, void** cpid){
 	pcb_t* proc = allocPcb();
@@ -41,11 +38,8 @@ int createProcess(state_t* statep, int priority, void** cpid){
 	return 0;
 }
 
-/*Termina il processo corrente e tutti i suoi figli
-	pid: processo da terminare 
-	->se pid == NULL termina il processo corrente
-	
-	return: ritorna 0 se la funzione ha successo, -1 altrimenti 	
+/*Termina il processo puntato da pid e tutti i suoi figli. Se il parametro è NULL
+	termina il processo corrente. ritorna 0 se la funzione ha successo, -1 altrimenti 	
 */
 int terminateProcess(void* pid){
 	pid = (pcb_t*)pid;
@@ -62,9 +56,8 @@ int terminateProcess(void* pid){
 		return -1;
 }
 
-/* Operazione di rilascio da un semaforo
-	semaddr: puntatore al valore del semaforo
-*/
+/* Operazione di rilascio da un semaforo */
+
 void verhogen(int *semaddr){
 	if (headBlocked(semaddr) != NULL){
 		pcb_t *p = removeBlocked(semaddr);
@@ -82,9 +75,8 @@ void verhogen(int *semaddr){
 	}
 }	
 
-/* Operazione di richiesta di un semaforo
-	semaddr: puntatore al valore del semaforo
-*/
+/* Operazione di richiesta di un semaforo */
+
 void passeren(int *semaddr){
 	if (*semaddr <= 0){		
 		if (insertBlocked(semaddr,currentProc))
@@ -203,7 +195,6 @@ void user_timer_update(pcb_t *currentProc) {
 
 /* Termina il processo passato come parametro e tutti i suoi figli rimuovendoli dalla readyqueue se presenti. Non gestisce i processi bloccati nelle code dei semafori.
    Si occupa anche di chiamare una Verhogen prima della terminazione se il processo è in sezione critica
-	root: puntatore al pcb_t del processo da terminare
 */
 void terminateProcess_exec(pcb_t *root){
 	while (!emptyChild(root)){
