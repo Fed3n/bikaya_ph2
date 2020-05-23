@@ -18,9 +18,9 @@ if 'uarm' in COMMAND_LINE_TARGETS:
 	dirpath = 'uarm_include'
 elif 'umps' in COMMAND_LINE_TARGETS or 'umps2' in COMMAND_LINE_TARGETS:
 	builder = 'mipsel-linux-gnu-'
-	ccflags = '-ffreestanding -mips1 -mfp32 -DTARGET_UMPS=1 -Wall'
+	ccflags = '-O0 -G0 -mno-abicalls -fno-pic -ffreestanding -mips1 -mfp32 -DTARGET_UMPS=1 -Wall'
 	linkflags = '-nostdlib -T./umps_include/umpscore.ldscript'
-	asflags = '-ffreestanding -mips1 -mfp32'
+	asflags = '-O0 -G0 -mno-abicalls -fno-pic -ffreestanding -mips1 -mfp32'
 	dirpath = 'umps_include'
 else:
 	print("Select a target to build")

@@ -3,7 +3,7 @@
 #include "pcb.h"
 #include "const.h"
 
-void interrupt12();
+void timerInterrupt();
 
 void devInterrupt(int line, int dev);
 

@@ -164,9 +164,9 @@ void outChildBlocked(pcb_t *p)
 	{
 		pcb_t *pcb = outBlocked(p);
 		pcb_t *pcb_son = NULL;
-		do {
-			pcb_son = removeChild(pcb);
-			outChildBlocked(pcb_son);
-		} while (pcb_son != NULL);
+			do {
+				pcb_son = removeChild(pcb);
+					outChildBlocked(pcb_son);
+			} while (pcb_son != NULL);
 	}
 }

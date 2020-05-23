@@ -1,0 +1,75 @@
+Documentazione relativa alla fase 2 del Bikaya Project di Federico De Marchi, Stefano Sgarzi, Manuel Vannini.
+
+Breve spiegazione generale delle scelte implementative e delle implementazioni non banali di alcune funzioni.
+
+######
+
+Il progetto è strutturato in modo da provare ad essere il più modulare possibile ed è quindi diviso in un file init, dedicato alle funzioni di inizializzazione di aree di memoria e processi, un file scheduler, in cui sono presenti la funzione schedule() e tutte le funzioni relative alla gestione della ready queue, un file handler, in cui sono definite le funzioni di handling delle eccezioni, e infine i file interrupt e syscall che contengono le funzioni richiamate dagli handler rispettivi. Sono inoltre presenti i precedenti file relativi alla gestione dei PCB, ASL, un file auxfun contenente funzioni ausiliarie memset e memcpy e i file di dichiarazioni di costanti.
+
+Il progetto doveva essere funzionante sulle due diverse architetture arm e mipsel, conseguentemente vi sono alcune differenze nella gestione di alcuni comportamenti e accessi a strutture dati. 
+A questo riguardo la nostra scelta è stata di evitare il più possibile blocchi del tipo #ifdef TARGET *codice* #endif nel codice principale e di rilegare tutto all'utilizzo di macro universali, definite specificamente per ciascuna delle due architetture nel file const.h. Esempi di queste macro sono per gli accessi a campi della struttura state_t o la quantità di riduzione/incremento del program counter in seguito a specifici eventi.
+
+
+##MAIN E INIZIALIZZAZIONE#
+Non si aggiunge molto rispetto alla fase precedente, l'unica differenza sostanziale nell'inizializzazione è che il processo viene inizializzato con tutti gli interrupt abilitati. Per questa fase 2 vengono inizializzate anche la ASL e alcune strutture ausiliare di semafori per la gestione degli interrupt.
+
+
+##SCHEDULER##
+Lo scheduler incapsula nella sua readyQueue una procQueue appoggiandosi alle funzioni fornite dalla gestione generale dei PCB e si appoggia ad un pcb_t* currentProc per memorizzare quale sia il processo correntemente in esecuzione (e se effettivamente ce ne sia uno).
+La funzione schedule() prima di tutto controlla se ci sia un processo corrente e in caso affermativo lo reinserisce in readyQueue. Se non ci sono state variazioni alle priorità o nuovi processi inseriti ci si può aspettare che questo processo torni primo in coda.
+Se la readyQueue risulta successivamente vuota, schedule() attiva gli interrupt e si mette in stato di attesa. Il fatto che la readyQueue sia vuota non implica necessariamente che non ci siano più processi in corso, può semplicemente voler dire che ci sono processi bloccati su semafori in attesa che un device termini un'operazione richiesta e li sblocchi.
+Se invece la readyQueue non è vuota viene estratto il primo processo in coda, settato nuovamente il timer e caricato il suo stato sul processore.
+Nella struttura del progetto, in seguito ad ogni eccezione viene regolarmente chiamato schedule(), anche in situazioni in cui sarebbe magari più efficiente ricaricare direttamente lo stato del processo corrente (come ad esempio in seguito ad una Passeren non bloccante). Questa scelta è voluta per rendere più prevedibile il flusso di esecuzione ed evitare un effetto GOTO che possa rendere complicato il debugging.
+
+
+##SYSCALL##
+Le system call vengono gestite da una funzione principale chiamata syscall_handler che si occupa di salvare l'old state e di recuperare i valori relativi al numero della sistem call ed ai parametri dai registri dell' oldarea dedicata. L'handler si occupa anche di gestire i valori di ritorno delle system call che li richiedono inserendolo nel campo del pcb_t apposito. Viene poi chiamata la system call corrispondere con i propri parametri.
+
+#Get CPU Time#
+La System Call si occupa anzitutto di aggiornare il tempo di esecuzione del processo avvenuto in Kernel Mode, attiva dal momento in cui é in esecuzione l'Exception.
+Il tempo di esecuzione in User Mode non necessita di essere aggiornato, in quanto non cambia durante l'esecuzione dell'eccezione.
+Il tempo totale (Wallclock) del processo viene aggiornato a tempo di esecuzione
+
+#Create Process#
+La system call alloca un nuovo pcb, gli assegna lo state e priorità in input e si occupa di segnare il tempo a cui entra in esecuzione.
+Il nuovo pcb viene poi messo come figlio del processo corrente chiamante e il suo indirizzo ritornato in pid**.
+Il caso di fallimento è previsto se non ci sono più PCB allocabili.
+
+#Riguardo a Terminate Process, Verhogen, Passeren, sezioni critiche#
+La system call terminate process richiede la terminazione di un processo e di tutti i suoi figli. E' inoltre necessario ritornare True o False per comunicare il successo o insuccesso della funzione.
+Inizialmente viene richiamata la funzione existingProcess che determina se il pid passato come parametro si riferisce ad un pcb_t valido (controlla se è il current proc, se è in ready queue o se si trova bloccato su un semaforo).
+La funzione outChildBlocked si occupa di rimuovere il processo corrente e tutti i suoi figli dai semafori nei quali sono bloccati. 
+Successivamente viene chiamata la terminateProcess_exec che rimuove il processo passato come parametro e tutti i suoi figli liberando le strutture dati impegnate.
+
+In fase di terminazione di un processo, se questo si trova in sezione critica, è necessario richiamare una V al momento della terminazione, se ciò non avviene verrà alterato il funzionamento del semaforo. Se invece il processo si trova in coda al semaforo può essere terminato senza problemi.
+Per poter determinare se un processo di trova in sezione critica abbiamo aggiunto un campo p_cskey alla struttura pcb_t che indica il puntatore al valore del semaforo relativo alla sezione critica in cui si trova il processo (sarà NULL se il processo non è in sezione critica).
+La modifica del campo avviene nelle seguenti casistiche: 
+- In fase di creazione viene settato a NULL
+- Quando il processo si trova in cima alla coda di un semaforo e viene chiamata una Verhogen il processo entra in sezione critica ed il campo viene settato all'indirizzo del semaforo in questione
+- Quando il processo chiama una Passeren con successo entra in sezione critica ed il campo viene settato di conseguenza
+- Quando il processo chiama una Verhogen il campo viene settato a NULL perchè il processo è uscito dalla sezione critica
+
+#Do_IO#
+Dato che la struttura del progetto non permette di ripristinare un'esecuzione di un processo a partire da un'eccezione, la realizzazione del controllo per l'I/O è un po' contorta.
+Si utilizzano due array di semafori waitIOsem e devsem di 48 elementi (40 device, ma i terminali usano sia trasmissione che recezione), che identificano i device nel loro ordine sequenziale in memoria attraverso una macro che restituisce il loro intero corrispondente da 0 a 39.
+Il primo semaforo waitIOsem è inizializzato ad 1 e controlla che non ci sia un'operazione di I/O in corso, nel caso il comando viene memorizzato nella pcb_t del processo e il processo messo in coda al semaforo. L'invio del comando verrà poi eseguito dall'handler degli interrupt dei device, che si occuperà di controllare se ci siano processi in attesa di eseguire un comando dopo averne terminato uno.
+Se il processo può eseguire il comando allora usando la union devreg_t si manda il comando nel campo recv_command in caso di receive del terminale o di un comando di device generico non terminale, se si tratta di transmission di terminale si manda in transm_command.
+Il processo viene poi sospeso nel semaforo devsem inizializzato a 0 e verrà poi risvegliato dall'handler degli interrupt dei device in seguito al completamento.
+
+#Spec_Passup#
+Ogni struttura pcb_t ha un array di 3 elementi excarea_t, che contengono due puntatori ad uno state_t oldarea ed uno state_t newarea ed un intero used (inizializzato a 0). I tipi di eccezioni speciali previsti per la Spec_Passup sono 0 per SYSCALL/BP, 1 per TLB e 2 per PGMTrap, l'array li prevede in quest'ordine.
+La system call semplicemente reindirizza i puntatori dell'excarea_t corrispondente al tipo alla new area e old area date in input e poi marca l'used bit a 1. Quando una SYSCALL > 8 (o un BP), un TLB o una PGMTrap vengono invocati dagli handler delle eccezioni, vengono rimandate ad un handler speciale special_handler, che sposta la old area su excarea[type].old e carica la new area excarea[type].new nel processore.
+Il processo viene terminato da istruzioni se prova ad invocare più di una volta una Spec_Passup dello stesso tipo o se invoca un'eccezione speciale senza aver specificato un handler tramite Spec_Passup.
+La funzione fallisce e ritorna -1 se il tipo specificato non è tra 0 e 2 oppure se sono stati passati degli state_t vuoti in input.
+
+#Get_pid_ppid#
+Esattamente come da istruzioni restituisce l'indirizzo del PCB del processo corrente in pid e di suo padre in ppid, solo se i contenitori pid/ppid sono dati in input.
+
+
+##INTERRUPT##
+
+Come per l'handling delle system call, viene salvato l'old state del processo e gestito il program counter come richiesto dalla specifica architettura, con la sola eccezione che nel caso degli interrupt potrebbe non esserci un processo corrente.
+L'handling delle eccezioni si ramifica in tre macrocategorie: timer, device I/O generici, terminali. Un'importante scelta implementativa è che gli interrupt vengono sì gestiti in ordine di priorità, ma vengono anche gestiti tutti quelli presenti. Questo velocizza l'esecuzione perché evita il costante passaggio per schedule() dopo aver gestito ogni singolo interrupt, ma potrebbe effettivamente costringere un processo ad usare il suo tempo di esecuzione in kernel mode per gestire interrupt non "suoi". Detto questo, questa scelta non ha avuto ripercussioni sull'esecuzione del test.
+Nel caso di un timer interrupt vengono aggiornate le priorità di tutti i processi fermi in readyQueue e resettata la priorità del processo corrente ad original_priority. La priorità dei processi fermi su un semaforo viene lasciata invariata.
+Nel caso di un device I/O generico o terminal interrupt vengono controllati tutti i bit sulla interrupting device bitmap della linea corrispondente e gestito l'interrupt per quello specifico device. Entrambe le funzione di I/O interrupt handling registrano nel pcb_t del processo che era bloccato sul semaforo il valore di status come valore di ritorno della systemcall Do_IO, mandano ACK e sbloccano il processo. Viene poi controllato se sul semaforo waitIOsem ci siano processi bloccati in attesa di eseguire il comando, in caso affermativo viene eseguita la stessa procedura che esegue Do_IO (viene mandato il comando e bloccato il processo in attesa del completamento). In realtà nel test questo caso non viene mai preso in considerazione perché un semaforo mutex effettua mutua esclusione sulle procedure di stampa.
+L'unica differenza tra l'handling di I/O generici e terminali è che nei terminali si deve distinguere da quale subdevice sia arrivato l'interrupt. Questo lo si vede controllando il contenuto del registro di stato, che contiene STATUS_RECEIVED o STATUS_TRANSMITTED se si sta attendendo un ACK per ricezione o trasmissione riuscita.

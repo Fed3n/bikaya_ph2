@@ -47,6 +47,8 @@
 
 #define TIME_SLICE 3000
 #define ACK_SLICE TIME_SLICE*(*(memaddr *)BUS_REG_TIME_SCALE)
+/*numero totale di devices, 5*8 + 8 (il terminale ha sia recv che transm)*/
+#define TOT_DEV_N (N_EXT_IL*N_DEV_PER_IL + N_DEV_PER_IL)
 /*ritorna il numero di semaforo della struttura devsem_t corrispondente al device*/
 #define DEVSEM_N(reg) (((reg)-DEV_REG_START)/(DEV_REG_SIZE))
 #define INTER_PROCESSOR_INTERRUPT 0
@@ -58,6 +60,10 @@
 #define PRINTER_DEVICES 6
 #define TERMINAL_DEVICES 7
 
+/*Alias per le funzioni di Time Management per maggiore chiarezza nelle varie parti di codice*/
+#define start_user_mode(proc) kernel_timer_update(proc)
+#define start_kernel_mode(proc) user_timer_update(proc)
+
 /**************************************************************
 *
 * UARM and UMPS specific global constants & macro definitions
@@ -65,10 +71,10 @@
 **************************************************************/
 #ifdef TARGET_UMPS
 /*interrupt disabled, kernel mode, local timer on, virtual memory off*/
-#define STATUS_ALL_INT_DISABLE_KM_LT(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_TE))
+#define STATUS_ALL_INT_DISABLE_KM_LT(status) ((status) | (STATUS_IEp) | (STATUS_TE))
 /*interrupt disabled eccetto i timer, kernel mode, virtual memory off*/
-#define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
-#define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEc) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE_KM_LT(status) ((status) | (STATUS_IEp) | (STATUS_IM(1)) | (STATUS_IM(2)) | (STATUS_TE))
+#define STATUS_ALL_INT_ENABLE_KM(status) ((status) | (STATUS_IEp) | (STATUS_IM_MASK) | (STATUS_TE))
 #define STATUS_ENABLE_ALL_INT(status) ((status) | (0xFF << 8))
 
 /*macro da passare a LDST*/
@@ -91,8 +97,10 @@
 /*la seguente macro ritorna il valore del bit cause prendendo in input lo state_t corrispondente*/
 #define CAUSE_REG(area) CAUSE_GET_EXCCODE(area->cause)
 
+/*workaround per non causare redefinizioni a causa di def gia' presente nel test*/
+#define BUS_TODLOW 0x1000001c
 /*CPU Ticks trascorsi, la macro era giá presente per uarm ma mancante per umps*/
-#define getTODLO() (*((unsigned int*)BUS_REG_TOD_LO))
+#define getTODLO() (*((unsigned int *)BUS_TODLOW))
 
 /*word count da modificare prima di chiamare LDST dopo un'eccezione*/
 #define SYSBP_PC 1

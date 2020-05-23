@@ -41,20 +41,13 @@ pcb_t *allocPcb(void) {
 		/*Si rimuove l'indirizzo del PCB rimosso dalla lista che lo contiene*/
 		list_del(&(temp->p_next));
 
-		/*Si inizializzano tutti i campi a Null*/
+		/*Si inizializzano tutti i campi a NULL/0*/
+		ownmemset(temp, 0, sizeof(pcb_t));
+		
+		/*Eccetto alcuni che vanno inizializzati più specificamente*/
 		INIT_LIST_HEAD(&(temp->p_next));
-		temp->p_parent = NULL;
 		INIT_LIST_HEAD(&(temp->p_child));
 		INIT_LIST_HEAD(&(temp->p_sib));
-		temp->priority = 0;
-		temp->p_semkey = NULL;
-		ownmemset(&temp->p_s, 0, sizeof(state_t));
-		int i;
-		for(i = 0; i < 3; i++){
-			ownmemset(&temp->excareas[i], 0, sizeof(excarea_t));
-		}
-
-		temp->wallclock_timer = getTODLO();
 
 		/*Ritorno il puntatore temporaneo per terminare la funzione*/
 		return temp;
@@ -132,10 +125,10 @@ pcb_t *outProcQ(struct list_head *head, pcb_t *p) {
 			if( p == temp) {
 				/*la funzione termina solo se p é uguale a temp*/
 				list_del(&(p->p_next));
-				break;
+				return p;
 			}
 		}
-		return p;
+		return NULL;
 	}
 }
 
@@ -166,13 +159,16 @@ Rimuove il primo figlio del pcb p e lo ritorna, se p non ha figli ritorna NULL.
 Se la lista dei figli di p non è vuota, rimuove il primo figlio p->child.next e lo ritorna.
 */
 pcb_t *removeChild(pcb_t *p){
-	if(emptyChild(p)) return NULL;
-	else{
-		/*Si memorizza il pcb_t da rimuovere*/
-		pcb_t *removed_p = container_of(p->p_child.next, pcb_t, p_sib);
-		list_del(p->p_child.next);
-		return removed_p;
+	if (p != NULL){
+		if(emptyChild(p)) return NULL;
+		else{
+			/*Si memorizza il pcb_t da rimuovere*/
+			pcb_t *removed_p = container_of(p->p_child.next, pcb_t, p_sib);
+			list_del(p->p_child.next);
+			return removed_p;
+		}
 	}
+	return NULL;
 }
 
 /*

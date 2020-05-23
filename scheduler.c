@@ -1,54 +1,18 @@
 #include "pcb.h"
 #include "scheduler.h"
+#include "syscall.h"
 #include "auxfun.h"
 
 /*la testa della ready queue è hidden e vi ci si interfaccia tramite le funzioni dello scheduler*/
 HIDDEN LIST_HEAD(readyQueue_h);
 
-/*Puntatore a processo corrente*/
+/*Puntatore a processo corrente, potrebbe essere NULL*/
 pcb_t* currentProc;
-
-
-/***AREA MOLTO SPERIMENTALE***/
-/*stato di attesa caricato se la ready queue è vuota in attesa di un nuovo processo*/
-state_t waitingState;
-
-/*la WAIT() è molto meno cpu consuming di un busy waiting*/
-void wait4proc(){
-	HALT();
-	WAIT();
-}
-
-/*Funzione per inizializzare il processo di attesa*/
-#ifdef TARGET_UMPS
-void initWaitingProc(){
-	ownmemset(&waitingState, 0, sizeof(state_t));
-	waitingState.reg_sp = (RAMTOP-(RAM_FRAMESIZE*21));
-	/*Inizializzo sia pc_epc che reg_t9 all'entry point come dal manuale di umps*/
-	waitingState.pc_epc = (memaddr)wait4proc;
-	waitingState.reg_t9 = (memaddr)wait4proc;
-	waitingState.status = STATUS_ALL_INT_ENABLE_KM(waitingState.status);
-}
-#endif
-
-#ifdef TARGET_UARM
-void initWaitingProc(){
-	ownmemset(&waitingState, 0, sizeof(state_t));
-	waitingState.pc = (memaddr)wait4proc;
-	waitingState.sp = (RAMTOP-(RAM_FRAMESIZE*21));
-	waitingState.cpsr = (waitingState.cpsr | STATUS_SYS_MODE);
-	waitingState.cpsr = STATUS_ALL_INT_ENABLE(waitingState.cpsr);
-	waitingState.CP15_Control = CP15_DISABLE_VM(waitingState.CP15_Control);
-}
-#endif
-
-/*************************/
 
 /*In seguito sono incapsulate alcune funzioni utili di una process queue per la ready queue*/
 
 void initReadyQueue(){
 	mkEmptyProcQ(&readyQueue_h);
-	initWaitingProc();
 }
 
 int emptyReadyQueue(){
@@ -74,13 +38,6 @@ pcb_t* headReadyQueue(){
 
 /*Funzioni per manipolare le informazioni e gli stati relativi ai processi*/
 
-void terminateCurrentProc(){
-	if(currentProc != NULL){
-		freePcb(currentProc);
-		currentProc = NULL;
-	}
-}
-
 void updatePriority(){
 	if(currentProc != NULL){
 		/*reset alla priorità del processo in controllo*/
@@ -105,13 +62,14 @@ void schedule(){
 	if(emptyReadyQueue()){
 		setSTATUS(STATUS_ENABLE_ALL_INT(getSTATUS()));
 		WAIT();
-	}
+	}	
 
 	//Avvio il processo in user mode
-	user_timer_update(currentProc);	
+	start_user_mode(currentProc);
 
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();
+
 	setTIMER(ACK_SLICE);
 	state_t* p = &(currentProc->p_s);
 	LDST(TO_LOAD(p));
