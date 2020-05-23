@@ -93,8 +93,10 @@
 /*la seguente macro ritorna il valore del bit cause prendendo in input lo state_t corrispondente*/
 #define CAUSE_REG(area) CAUSE_GET_EXCCODE(area->cause)
 
+/*workaround per non causare redefinizioni a causa di def gia' presente nel test*/
+#define BUS_TODLOW 0x1000001c
 /*CPU Ticks trascorsi, la macro era giá presente per uarm ma mancante per umps*/
-#define getTODLO() (*((unsigned int*)BUS_REG_TOD_LO))
+#define getTODLO() (*((unsigned int *)BUS_TODLOW))
 
 /*word count da modificare prima di chiamare LDST dopo un'eccezione*/
 #define SYSBP_PC 1

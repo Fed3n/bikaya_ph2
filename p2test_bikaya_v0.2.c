@@ -150,6 +150,7 @@ unsigned int set_sp_pc_status(state_t *s, state_t *copy, unsigned int pc) {
 #endif
 }
 
+
 /* a procedure to print on terminal 0 */
 void print(char *msg) {
     unsigned int command;
@@ -167,7 +168,7 @@ void print(char *msg) {
         /* Wait for I/O completion (SYS8) */
         status = SYSCALL(WAITIO, command, (int)base, FALSE);
 
-        /* PANIC(); */
+        /*      PANIC(); */
 
         if ((status & TERMSTATMASK) != TRANSM)
             PANIC();
@@ -236,8 +237,6 @@ void test() {
     SYSCALL(PASSEREN, (int)&endp2, 0, 0); /* P(endp2)     */
     print("p1 knows p2 ended\n");
 
-	print("after p2\n");
-
     /* make sure we really blocked */
     if (p1p2synch == 0)
         print("error: p1/p2 synchronization bad\n");
@@ -299,7 +298,6 @@ void p2() {
     cpu_t wallclock_t1, wallclock_t2; /* wallclock time used       */
 
     /* startp2 is initialized to 0. p1 Vs it then waits for p2 termination */
-
     SYSCALL(PASSEREN, (int)&startp2, 0, 0); /* P(startp2)   */
 
     print("p2 starts\n");
@@ -347,7 +345,7 @@ void p2() {
 
     p1p2synch = 1; /* p1 will check this */
 
-    SYSCALL(VERHOGEN, (int)&endp2, 0, 0); /* V(endp2) */
+    SYSCALL(VERHOGEN, (int)&endp2, 0, 0); /* V(endp2)     */
 
     SYSCALL(TERMINATEPROCESS, 0, 0, 0); /* terminate p2 */
 

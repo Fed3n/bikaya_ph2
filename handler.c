@@ -28,6 +28,7 @@ void syscall_handler(){
 	int retvalue = 1; //i valori possibili sono 0 e -1, capisco così se è stato modificato
 	/*controllo se l'eccezione sollevata è una system call*/
 	if (CAUSE_REG(p) == SYSCALL_EXC) {
+		/*SYSCALL*/
 		/*recupero del tipo e dei parametri della systemcall*/
 		unsigned int sysNum = p->ST_A0;
 		unsigned int arg1 = p->ST_A1;
@@ -62,13 +63,14 @@ void syscall_handler(){
 			default:
 				special_handler(TYPE_SYS,p);
 		}
-		//valore di ritorno (se non è stato modificato)
+		/*valore di ritorno (se non è stato modificato)*/
 		if (retvalue != 1) 
 			p->ST_RET = retvalue;
 		schedule();
 	}
 	else
-		HALT();
+		/*BREAKPOINT*/
+		special_handler(TYPE_SYS,p);
 }
 
 void interrupt_handler(){
@@ -113,6 +115,9 @@ void interrupt_handler(){
 	}
 	schedule();
 }
+
+/*TLB e PGMTrap handler gestiti attraverso handler speciali specificati da
+specpassup (se specificati, altrimenti terminazione)*/
 
 void tlb_handler(){
 	kernel_timer_update(currentProc);

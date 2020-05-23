@@ -96,7 +96,15 @@ void passeren(int *semaddr){
 	}
 }
 
-/*richiesta di operazione di IO*/
+/*	Inizia un'operazione di I/O su un device.
+	Il primo semaforo waitIOsem controlla che non ci sia
+	un'operazione in corso, il secondo semaforo devsem
+	blocca il processo che ha mandato il comando in attesa
+	del completamento. Se il processo viene bloccato dal primo
+	semaforo, il comando viene memorizzato nel suo pcb_t
+	e verrà poi eseguito successivamente a quello in corso
+	dall'interrupt handler.
+*/
 void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 	devreg_t* devp = (devreg_t*)reg;
 
@@ -127,8 +135,12 @@ void do_IO(unsigned int command, unsigned int* reg, int subdevice){
 	passeren(&devsem[i]);
 }
 
+/*	Inserisce nell'area pcb_t->excarea[tipo] del currentProc gli stati
+	old e new per l'handling di eccezioni speciali e marca lo used bit.
+	Se used bit è già marcato il processo viene terminato.
+*/
 int spec_passup(int type, state_t* old, state_t* new){
-	if(type < 0 || type > 2){
+	if(type < 0 || type > 2 || old == NULL || new == NULL){
 		/*tipo non ammesso*/
 		return -1;
 	}
@@ -146,6 +158,9 @@ int spec_passup(int type, state_t* old, state_t* new){
 	return 0;
 }
 
+/*	Inserisce l'indirizzo del pcb del currentProc in pid
+	e di suo padre in ppid, se pid** e ppid** esistono	
+*/
 void get_pid_ppid(void** pid, void** ppid){
 	if(pid != NULL)
 		*pid = currentProc;
@@ -202,8 +217,9 @@ void terminateProcess_exec(pcb_t *root){
 	freePcb(root);
 }
 
-//ritorna 1 se il processo è un processo attualmente allocato 
-//ritorna 0 altrimenti
+/*	Ritorna 1 se il processo è un processo attualmente allocato,
+	ritorna 0 altrimenti. Se il processo è in readyqueue ne viene rimosso.
+*/
 int existingProcess(pcb_t* p){
 	/*ritorna TRUE se p è il currentProc, se è in ready queue (e lo rimuove) o se è bloccato in un semaforo*/
 	return ((p == currentProc) || outReadyQueue(p) || p->p_semkey);
