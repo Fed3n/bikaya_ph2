@@ -60,6 +60,10 @@
 #define PRINTER_DEVICES 6
 #define TERMINAL_DEVICES 7
 
+/*Alias per le funzioni di Time Management per maggiore chiarezza nelle varie parti di codice*/
+#define start_user_mode(proc) kernel_timer_update(proc)
+#define start_kernel_mode(proc) user_timer_update(proc)
+
 /**************************************************************
 *
 * UARM and UMPS specific global constants & macro definitions

@@ -65,7 +65,7 @@ void schedule(){
 	}	
 
 	//Avvio il processo in user mode
-	user_timer_update(currentProc);
+	start_user_mode(currentProc);
 
 	/*Pop dalla ready queue diventa processo corrente e viene caricato*/
 	currentProc = removeReadyQueue();

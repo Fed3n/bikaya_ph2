@@ -19,7 +19,8 @@
 extern pcb_t* currentProc;
 
 void syscall_handler(){
-	kernel_timer_update(currentProc);
+	/*L'exception avviene in modalitá privilegiata, quindi si entra in Kernel Mode*/
+	start_kernel_mode(currentProc);
 	/*recupero dell'old area*/
 	state_t* p = (state_t*)SYSBK_OLDAREA;
 	/*aggiornamento PC*/
@@ -74,7 +75,8 @@ void syscall_handler(){
 }
 
 void interrupt_handler(){
-	kernel_timer_update(currentProc);
+	/*L'exception avviene in modalitá privilegiata, quindi si entra in Kernel Mode*/
+	start_kernel_mode(currentProc);
 	/*Se c'è un processo in corso che è stato interrotto*/
 	if(currentProc != NULL){
 		/*PC da decrementare di 1 word su uarm, niente su umps*/
@@ -120,13 +122,15 @@ void interrupt_handler(){
 specpassup (se specificati, altrimenti terminazione)*/
 
 void tlb_handler(){
-	kernel_timer_update(currentProc);
+	/*L'exception avviene in modalitá privilegiata, quindi si entra in Kernel Mode*/
+	start_kernel_mode(currentProc);
 	state_t* old = (state_t *)TLB_OLDAREA;
 	special_handler(TYPE_TLB,old);
 }
 
 void trap_handler(){
-	kernel_timer_update(currentProc);
+	/*L'exception avviene in modalitá privilegiata, quindi si entra in Kernel Mode*/
+	start_kernel_mode(currentProc);
 	state_t* old = (state_t *)PGMTRAP_OLDAREA;
 	special_handler(TYPE_PGMTRAP,old);
 }
